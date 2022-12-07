@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter.messagebox import showerror, showinfo
+from tkinter.filedialog import askdirectory
 
 from pathlib import Path
 
@@ -59,15 +60,15 @@ class Application(tk.Tk):
         tk.Label(input_frame, text='Landsat 8 first: ').grid(column=0, row=0)
         tk.Label(input_frame, text='Landsat 8 second: ').grid(column=0, row=1)
 
-        entry_1_var = tk.StringVar(input_frame, value='Path: Row:')
-        entry_2_var = tk.StringVar(input_frame, value='Path: Row:')
-        tk.Entry(input_frame, state='readonly', textvariable=entry_1_var).grid(column=1, row=0)
-        tk.Entry(input_frame, state='readonly', textvariable=entry_2_var).grid(column=1, row=1)
+        self.entry_1_var = tk.StringVar(input_frame, value='Path: Row:')
+        self.entry_2_var = tk.StringVar(input_frame, value='Path: Row:')
+        tk.Entry(input_frame, state='readonly', textvariable=self.entry_1_var, width=30).grid(column=1, row=0)
+        tk.Entry(input_frame, state='readonly', textvariable=self.entry_2_var, width=30).grid(column=1, row=1)
 
-        tk.Button(input_frame, text='Select').grid(column=2, row=0)
-        tk.Button(input_frame, text='Select').grid(column=2, row=1)
+        tk.Button(input_frame, text='Select', command=self.select_first_path).grid(column=2, row=0)
+        tk.Button(input_frame, text='Select', command=self.select_second_path).grid(column=2, row=1)
 
-        tk.Button(input_frame, text='Clear').grid(column=0, row=2, columnspan=3, sticky='EW', pady=5)
+        tk.Button(input_frame, text='Clear', command=self.clear_path).grid(column=0, row=2, columnspan=3, sticky='EW', pady=5)
         tk.Button(input_frame, text='Exit', command=self.destroy).grid(column=0, row=3, columnspan=3, sticky='EW', pady=5)
         input_frame.grid(column=0, row=0)
 
@@ -106,6 +107,35 @@ class Application(tk.Tk):
         self.pi_def = tk.PhotoImage(file=IMAGES_DIR/'def.png')
         tk.Button(output_frame, image=self.pi_def).grid(column=0, row=7, columnspan=2)
         output_frame.grid(column=0, row=2)
+
+    def select_path(self):
+        try:
+            directory = askdirectory(title='Select LANDSAT 8 directory', mustexist=True)
+            directory = Path(directory)
+            result = self.mc.select_path(directory)
+            if result is None:
+                showerror('Error', 'Something went wrong during LANDSAT 8 directory loading. Make sure the directory exists and try again.')
+                return
+        except:
+            showerror('Error', 'Something went wrong during LANDSAT 8 directory loading. Make sure the directory exists and try again.')
+            return
+        path, row, dt = result
+        return directory, path, row, dt
+
+    def select_first_path(self):
+        dir_, path, row, dt = self.select_path()
+        self.entry_1_var.set('Path: ' + path + ', Row: ' + row + ' ' + str(dt.date()))
+        self.mc.first_path = dir_
+
+    def select_second_path(self):
+        dir_, path, row, dt = self.select_path()
+        self.entry_2_var.set('Path: ' + path + ', Row: ' + row + ' ' + str(dt.date()))
+        self.mc.second_path = dir_
+
+    def clear_path(self):
+        self.entry_1_var.set('Path: Row:')
+        self.entry_2_var.set('Path: Row:')
+        self.mc.first_path = self.mc.second_path = None
 
 
 class CoordinatesDialog(tk.Toplevel):

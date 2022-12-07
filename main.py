@@ -1,5 +1,9 @@
 from gui.tk import *
 
+from pathlib import Path
+import dateutil.parser
+import json
+
 import numpy as np
 
 from pyproj import Proj, transform
@@ -28,16 +32,22 @@ class MainController:
         app = Application(MainController())
         app.mainloop()
 
-    def select_first_path(self, path):
-        # return path and row
-        pass
-
-    def select_second_path(self, path):
-        # return path and row
-        pass
-
-    def clear_selected_paths(self):
-        pass
+    def select_path(self, path):
+        if Path.exists(path) and Path.is_dir(path):
+            f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(path).glob('*')]))
+            if f is None or len(f) == 0:
+                # TODO: Inform user about error
+                return
+            f = f[0]
+            with open(f, 'r') as file:
+                json_decoder = json.load(file)
+                properties = json_decoder['properties']
+                path = properties['landsat:wrs_path']
+                row = properties['landsat:wrs_row']
+                dt = properties['datetime']
+                dt = dateutil.parser.isoparse(dt)
+                return path, row, dt
+        # TODO: Inform user about error
 
     def exit(self):
         pass
