@@ -50,6 +50,38 @@ class Loader:
         rgb = (rgb / rgb.max() * 255).astype('uint8')
         return rgb
 
+    def rgb_s(self, coordinates=None):
+        return equalize(self.rgb(coordinates))
+
+    def ndvi_classes(self, coordinates=None):
+        b1 = self.load(0)
+        r = self.load(3)
+        nir = self.load(4)
+
+        if coordinates is None:
+            # TODO: Return full size image
+            pass
+
+        r = msk.mask(r, coordinates, crop=True)[0]
+        b1 = msk.mask(b1, coordinates, crop=True)[0]
+        nir = msk.mask(nir, coordinates, crop=True)[0]
+
+        r = r[0].astype('float64')
+        b1 = b1[0].astype('float64')
+        nir = nir[0].astype('float64')
+
+        b1 = np.where(b1 / (2 ** 16) > 0.4, 1, 0).astype('uint8')
+        ndvi = np.nan_to_num((nir - r) / (nir + r))
+
+        ndvi_classification = np.zeros(ndvi.shape + (3,)).astype('uint8')
+        ndvi_classification[(ndvi < 0.02) & (ndvi != 0)] = [0, 0, 255]  # water body
+        ndvi_classification[b1 == 1] = [255, 255, 255]  # clouds
+        ndvi_classification[(ndvi >= 0.02) & (ndvi < 0.12)] = [128, 128, 128]  # shadow/buildings
+        ndvi_classification[(ndvi > 0.15) & (ndvi < 0.2)] = [128, 128, 0]  # bare soil/sand
+        ndvi_classification[(ndvi >= 0.2) & (ndvi < 0.4)] = [0, 255, 0]  # low
+        ndvi_classification[(ndvi >= 0.4)] = [0, 128, 0]  # huge
+        return ndvi_classification.astype('uint8')
+
 
 class MainController:
     def __init__(self):
@@ -153,6 +185,82 @@ class MainController:
             # TODO: Inform user about error
             pass
 
+    def rgb1_s(self):
+        if self.first_path is None:
+            # TODO: Inform user about error
+            return
+
+        loader = Loader(self.first_path)
+        out_proj = Proj(init=str(loader.crs).lower())
+        in_proj = Proj(init='epsg:4326')
+
+        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
+        p = Polygon(new_coords)
+
+        try:
+            rgb = loader.rgb_s([p])
+            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 1 Stretched')).start()
+        except:
+            # TODO: Inform user about error
+            pass
+
+    def rgb2_s(self):
+        if self.second_path is None:
+            # TODO: Inform user about error
+            return
+
+        loader = Loader(self.second_path)
+        out_proj = Proj(init=str(loader.crs).lower())
+        in_proj = Proj(init='epsg:4326')
+
+        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
+        p = Polygon(new_coords)
+
+        try:
+            rgb = loader.rgb_s([p])
+            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 1 Stretched')).start()
+        except:
+            # TODO: Inform user about error
+            pass
+
+    def ndvi1(self):
+        if self.first_path is None:
+            # TODO: Inform user about error
+            return
+
+        loader = Loader(self.first_path)
+        out_proj = Proj(init=str(loader.crs).lower())
+        in_proj = Proj(init='epsg:4326')
+
+        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
+        p = Polygon(new_coords)
+
+        try:
+            ndvi = loader.ndvi_classes([p])
+            multiprocessing.Process(target=plot_img, args=(ndvi, 'NDVI 1')).start()
+        except:
+            # TODO: Inform user about error
+            pass
+
+    def ndvi2(self):
+        if self.second_path is None:
+            # TODO: Inform user about error
+            return
+
+        loader = Loader(self.second_path)
+        out_proj = Proj(init=str(loader.crs).lower())
+        in_proj = Proj(init='epsg:4326')
+
+        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
+        p = Polygon(new_coords)
+
+        try:
+            ndvi = loader.ndvi_classes([p])
+            multiprocessing.Process(target=plot_img, args=(ndvi, 'NDVI 2')).start()
+        except:
+            # TODO: Inform user about error
+            pass
+
 
 def plot_img(img, title=None):
     plt.imshow(img)
@@ -160,6 +268,12 @@ def plot_img(img, title=None):
         plt.title(title)
     plt.axis(False)
     plt.show()
+
+def equalize(img):
+    img[:, :, 0] = cv2.equalizeHist(img[:, :, 0])
+    img[:, :, 1] = cv2.equalizeHist(img[:, :, 1])
+    img[:, :, 2] = cv2.equalizeHist(img[:, :, 2])
+    return img
 
 
 if __name__ == '__main__':

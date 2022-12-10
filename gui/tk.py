@@ -149,8 +149,8 @@ class Application(tk.Tk):
         self.pi_ndvi = tk.PhotoImage(file=IMAGES_DIR / 'ndvi.png')
         self.pi_rgb = tk.PhotoImage(file=IMAGES_DIR / 'rgb.png')
         tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb1).grid(column=0, row=1)
-        tk.Button(output_frame, image=self.pi_ndvi).grid(column=1, row=1)
-        tk.Button(output_frame, image=self.pi_ndvi).grid(column=2, row=1)
+        tk.Button(output_frame, image=self.pi_ndvi, command=self.mc.ndvi1).grid(column=1, row=1)
+        tk.Button(output_frame, image=self.pi_ndvi, command=self.mc.ndvi2).grid(column=2, row=1)
         tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb2).grid(column=3, row=1)
 
         tk.Label(output_frame, text='RGB stretched').grid(column=0, row=2)
@@ -159,10 +159,10 @@ class Application(tk.Tk):
         tk.Label(output_frame, text='RGB stretched').grid(column=3, row=2)
         self.pi_gndvi = tk.PhotoImage(file=IMAGES_DIR / 'gndvi.png')
         self.pi_rgb_s = tk.PhotoImage(file=IMAGES_DIR / 'rgb_stretching.png')
-        tk.Button(output_frame, image=self.pi_rgb_s).grid(column=0, row=3)
+        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc.rgb1_s).grid(column=0, row=3)
         tk.Button(output_frame, image=self.pi_gndvi).grid(column=1, row=3)
         tk.Button(output_frame, image=self.pi_gndvi).grid(column=2, row=3)
-        tk.Button(output_frame, image=self.pi_rgb_s).grid(column=3, row=3)
+        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc.rgb2_s).grid(column=3, row=3)
 
         tk.Label(output_frame, text='NDWI 1').grid(column=1, row=4)
         tk.Label(output_frame, text='NDWI 2').grid(column=2, row=4)
