@@ -12,6 +12,7 @@ from pyproj import Proj, transform
 from shapely.geometry import Polygon
 from matplotlib import pyplot as plt
 from rasterio import mask as msk
+import multiprocessing
 import rasterio
 import cv2
 
@@ -128,8 +129,7 @@ class MainController:
 
         try:
             rgb = loader.rgb([p])
-            plt.imshow(rgb)
-            plt.show()
+            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 1')).start()
         except:
             # TODO: Inform user about error
             pass
@@ -148,11 +148,19 @@ class MainController:
 
         try:
             rgb = loader.rgb([p])
-            plt.imshow(rgb)
-            plt.show()
+            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 2')).start()
         except:
             # TODO: Inform user about error
             pass
 
 
-MainController.main()
+def plot_img(img, title=None):
+    plt.imshow(img)
+    if title is not None:
+        plt.title(title)
+    plt.axis(False)
+    plt.show()
+
+
+if __name__ == '__main__':
+    MainController.main()
