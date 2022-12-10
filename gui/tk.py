@@ -85,27 +85,37 @@ class Application(tk.Tk):
 
         # init output frame
         output_frame = tk.Frame(self)
-        tk.Label(output_frame, text='NDVI 1').grid(column=0, row=0)
-        tk.Label(output_frame, text='NDVI 2').grid(column=1, row=0)
+        tk.Label(output_frame, text='RGB 1').grid(column=0, row=0)
+        tk.Label(output_frame, text='NDVI 1').grid(column=1, row=0)
+        tk.Label(output_frame, text='NDVI 2').grid(column=2, row=0)
+        tk.Label(output_frame, text='RGB 2').grid(column=3, row=0)
         self.pi_ndvi = tk.PhotoImage(file=IMAGES_DIR/'ndvi.png')
-        tk.Button(output_frame, image=self.pi_ndvi).grid(column=0, row=1)
+        self.pi_rgb = tk.PhotoImage(file=IMAGES_DIR/'rgb.png')
+        tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb1).grid(column=0, row=1)
         tk.Button(output_frame, image=self.pi_ndvi).grid(column=1, row=1)
+        tk.Button(output_frame, image=self.pi_ndvi).grid(column=2, row=1)
+        tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb2).grid(column=3, row=1)
 
-        tk.Label(output_frame, text='GNDVI 1').grid(column=0, row=2)
-        tk.Label(output_frame, text='GNDVI 2').grid(column=1, row=2)
+        tk.Label(output_frame, text='RGB stretched').grid(column=0, row=2)
+        tk.Label(output_frame, text='GNDVI 1').grid(column=1, row=2)
+        tk.Label(output_frame, text='GNDVI 2').grid(column=2, row=2)
+        tk.Label(output_frame, text='RGB stretched').grid(column=3, row=2)
         self.pi_gndvi = tk.PhotoImage(file=IMAGES_DIR/'gndvi.png')
-        tk.Button(output_frame, image=self.pi_gndvi).grid(column=0, row=3)
+        self.pi_rgb_s = tk.PhotoImage(file=IMAGES_DIR/'rgb_stretching.png')
+        tk.Button(output_frame, image=self.pi_rgb_s).grid(column=0, row=3)
         tk.Button(output_frame, image=self.pi_gndvi).grid(column=1, row=3)
+        tk.Button(output_frame, image=self.pi_gndvi).grid(column=2, row=3)
+        tk.Button(output_frame, image=self.pi_rgb_s).grid(column=3, row=3)
 
-        tk.Label(output_frame, text='NDWI 1').grid(column=0, row=4)
-        tk.Label(output_frame, text='NDWI 2').grid(column=1, row=4)
+        tk.Label(output_frame, text='NDWI 1').grid(column=1, row=4)
+        tk.Label(output_frame, text='NDWI 2').grid(column=2, row=4)
         self.pi_ndwi = tk.PhotoImage(file=IMAGES_DIR/'ndwi.png')
-        tk.Button(output_frame, image=self.pi_ndwi).grid(column=0, row=5)
         tk.Button(output_frame, image=self.pi_ndwi).grid(column=1, row=5)
+        tk.Button(output_frame, image=self.pi_ndwi).grid(column=2, row=5)
 
-        tk.Label(output_frame, text='De-forestation map').grid(column=0, row=6, columnspan=2)
+        tk.Label(output_frame, text='De-forestation map').grid(column=1, row=6, columnspan=2)
         self.pi_def = tk.PhotoImage(file=IMAGES_DIR/'def.png')
-        tk.Button(output_frame, image=self.pi_def).grid(column=0, row=7, columnspan=2)
+        tk.Button(output_frame, image=self.pi_def).grid(column=1, row=7, columnspan=2)
         output_frame.grid(column=0, row=2)
 
     def select_path(self):
@@ -136,6 +146,10 @@ class Application(tk.Tk):
         self.entry_1_var.set('Path: Row:')
         self.entry_2_var.set('Path: Row:')
         self.mc.first_path = self.mc.second_path = None
+
+    @staticmethod
+    def error(msg):
+        showerror('Error', msg)
 
 
 class CoordinatesDialog(tk.Toplevel):
