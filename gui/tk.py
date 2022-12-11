@@ -175,6 +175,9 @@ class Application(tk.Tk):
         tk.Button(output_frame, image=self.pi_def).grid(column=1, row=7, columnspan=2)
         output_frame.grid(column=0, row=2)
 
+    def start(self):
+        self.mainloop()
+
     def select_path(self):
         """
         Open directory dialog and get path. Calls select_path from main controller
@@ -253,7 +256,7 @@ class CoordinatesDialog(tk.Toplevel):
         self.listbox.grid(column=0, row=0, columnspan=3, sticky='EW')
 
         tk.Button(self, command=self.del_selected, text='Delete').grid(column=0, columnspan=3, row=1, ipady=5, sticky='EW')
-        tk.Label(self, text='Coord (lat, long): ').grid(column=0, row=2)
+        tk.Label(self, text='Coord (lat, lon): ').grid(column=0, row=2)
 
         self.coord_var = tk.StringVar(self, value='')  # coordinate var for entry field
         tk.Entry(self, textvariable=self.coord_var).grid(column=1, pady=10, row=2, padx=5, sticky='EW')
