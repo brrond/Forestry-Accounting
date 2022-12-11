@@ -53,8 +53,7 @@ class Loader:
     def rgb_s(self, coordinates=None):
         return equalize(self.rgb(coordinates))
 
-    def ndvi_classes(self, coordinates=None):
-        b1 = self.load(0)
+    def ndvi(self, coordinates=None):
         r = self.load(3)
         nir = self.load(4)
 
@@ -63,16 +62,28 @@ class Loader:
             pass
 
         r = msk.mask(r, coordinates, crop=True)[0]
-        b1 = msk.mask(b1, coordinates, crop=True)[0]
         nir = msk.mask(nir, coordinates, crop=True)[0]
 
         r = r[0].astype('float64')
-        b1 = b1[0].astype('float64')
         nir = nir[0].astype('float64')
 
-        b1 = np.where(b1 / (2 ** 16) > 0.4, 1, 0).astype('uint8')
         ndvi = np.nan_to_num((nir - r) / (nir + r))
+        return ndvi
 
+    def ndvi_classes(self, coordinates=None):
+        b1 = self.load(0)
+
+        if coordinates is None:
+            # TODO: Return full size image
+            pass
+
+        b1 = msk.mask(b1, coordinates, crop=True)[0]
+
+        b1 = b1[0].astype('float64')
+
+        b1 = np.where(b1 / (2 ** 16) > 0.4, 1, 0).astype('uint8')
+
+        ndvi = self.ndvi(coordinates)
         ndvi_classification = np.zeros(ndvi.shape + (3,)).astype('uint8')
         ndvi_classification[(ndvi < 0.02) & (ndvi != 0)] = [0, 0, 255]  # water body
         ndvi_classification[b1 == 1] = [255, 255, 255]  # clouds
@@ -236,7 +247,7 @@ class MainController:
         p = Polygon(new_coords)
 
         try:
-            ndvi = loader.ndvi_classes([p])
+            ndvi = loader.ndvi([p])
             multiprocessing.Process(target=plot_img, args=(ndvi, 'NDVI 1')).start()
         except:
             # TODO: Inform user about error
@@ -255,7 +266,7 @@ class MainController:
         p = Polygon(new_coords)
 
         try:
-            ndvi = loader.ndvi_classes([p])
+            ndvi = loader.ndvi([p])
             multiprocessing.Process(target=plot_img, args=(ndvi, 'NDVI 2')).start()
         except:
             # TODO: Inform user about error
@@ -268,6 +279,7 @@ def plot_img(img, title=None):
         plt.title(title)
     plt.axis(False)
     plt.show()
+
 
 def equalize(img):
     img[:, :, 0] = cv2.equalizeHist(img[:, :, 0])
