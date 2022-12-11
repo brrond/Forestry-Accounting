@@ -108,6 +108,7 @@ class MainController:
             '48.044346, 37.623734'
         ]
         self.first_path = self.second_path = None
+        self.loader1 = self.loader2 = None
 
     def get_coordinates_as_array(self):
         coordinates = []
@@ -128,7 +129,8 @@ class MainController:
             new_coords.append(transform(in_proj, out_proj, coord[1], coord[0]))
         return new_coords
 
-    def select_path(self, path):
+    @staticmethod
+    def select_path(path):
         if Path.exists(path) and Path.is_dir(path):
             f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(path).glob('*')]))
             if f is None or len(f) == 0:
@@ -145,6 +147,18 @@ class MainController:
                 return path, row, dt
         # TODO: Inform user about error
 
+    def set_first_path(self, path):
+        self.loader1 = Loader(path)
+        self.first_path = path
+
+    def set_second_path(self, path):
+        self.loader2 = Loader(path)
+        self.second_path = path
+
+    def clear_paths(self):
+        self.loader1 = self.loader2 = None
+        self.first_path = self.second_path = None
+
     def exit(self):
         pass
 
@@ -158,119 +172,65 @@ class MainController:
         plt.fill(y, x)
         plt.show()
 
-    def rgb1(self):
-        if self.first_path is None:
-            # TODO: Inform user about error
-            return
+    def get_loader(self, loader_index) -> Loader:
+        if loader_index == 1:
+            if self.loader1 is None:
+                # TODO: Inform user about error
+                raise ValueError('No first loader found')
+            return self.loader1
+        else:
+            if self.loader2 is None:
+                # TODO: Inform user about error
+                raise ValueError('No second loader found')
+            return self.loader2
 
-        loader = Loader(self.first_path)
-        out_proj = Proj(init=str(loader.crs).lower())
+    def get_polygon(self, crs) -> Polygon:
+        out_proj = Proj(init=str(crs).lower())
         in_proj = Proj(init='epsg:4326')
 
         new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
-        p = Polygon(new_coords)
+        return Polygon(new_coords)
 
+    def plot_img_in_another_process(self, img, title=None):
+        multiprocessing.Process(target=plot_img, args=(img, title)).start()
+
+    def get_img(self, method, ps, title):
         try:
-            rgb = loader.rgb([p])
-            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 1')).start()
+            rgb = method(ps)
+            self.plot_img_in_another_process(rgb, title)
         except:
             # TODO: Inform user about error
             pass
+
+    def rgb1(self):
+        loader = self.get_loader(1)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.rgb, [p], 'RGB 1')
 
     def rgb2(self):
-        if self.second_path is None:
-            # TODO: Inform user about error
-            return
-
-        loader = Loader(self.second_path)
-        out_proj = Proj(init=str(loader.crs).lower())
-        in_proj = Proj(init='epsg:4326')
-
-        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
-        p = Polygon(new_coords)
-
-        try:
-            rgb = loader.rgb([p])
-            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 2')).start()
-        except:
-            # TODO: Inform user about error
-            pass
+        loader = self.get_loader(2)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.rgb, [p], 'RGB 2')
 
     def rgb1_s(self):
-        if self.first_path is None:
-            # TODO: Inform user about error
-            return
-
-        loader = Loader(self.first_path)
-        out_proj = Proj(init=str(loader.crs).lower())
-        in_proj = Proj(init='epsg:4326')
-
-        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
-        p = Polygon(new_coords)
-
-        try:
-            rgb = loader.rgb_s([p])
-            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 1 Stretched')).start()
-        except:
-            # TODO: Inform user about error
-            pass
+        loader = self.get_loader(1)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.rgb_s, [p], 'RGB 1 Stretched')
 
     def rgb2_s(self):
-        if self.second_path is None:
-            # TODO: Inform user about error
-            return
-
-        loader = Loader(self.second_path)
-        out_proj = Proj(init=str(loader.crs).lower())
-        in_proj = Proj(init='epsg:4326')
-
-        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
-        p = Polygon(new_coords)
-
-        try:
-            rgb = loader.rgb_s([p])
-            multiprocessing.Process(target=plot_img, args=(rgb, 'RGB 1 Stretched')).start()
-        except:
-            # TODO: Inform user about error
-            pass
+        loader = self.get_loader(2)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.rgb_s, [p], 'RGB 2 Stretched')
 
     def ndvi1(self):
-        if self.first_path is None:
-            # TODO: Inform user about error
-            return
-
-        loader = Loader(self.first_path)
-        out_proj = Proj(init=str(loader.crs).lower())
-        in_proj = Proj(init='epsg:4326')
-
-        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
-        p = Polygon(new_coords)
-
-        try:
-            ndvi = loader.ndvi([p])
-            multiprocessing.Process(target=plot_img, args=(ndvi, 'NDVI 1')).start()
-        except:
-            # TODO: Inform user about error
-            pass
+        loader = self.get_loader(1)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.ndvi, [p], 'NDVI 1')
 
     def ndvi2(self):
-        if self.second_path is None:
-            # TODO: Inform user about error
-            return
-
-        loader = Loader(self.second_path)
-        out_proj = Proj(init=str(loader.crs).lower())
-        in_proj = Proj(init='epsg:4326')
-
-        new_coords = self.transform(in_proj, out_proj, self.get_coordinates_as_array())
-        p = Polygon(new_coords)
-
-        try:
-            ndvi = loader.ndvi([p])
-            multiprocessing.Process(target=plot_img, args=(ndvi, 'NDVI 2')).start()
-        except:
-            # TODO: Inform user about error
-            pass
+        loader = self.get_loader(2)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.ndvi, [p], 'NDVI 2')
 
 
 def plot_img(img, title=None):

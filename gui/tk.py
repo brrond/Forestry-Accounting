@@ -201,17 +201,17 @@ class Application(tk.Tk):
     def select_first_path(self):
         dir_, path, row, dt = self.select_path()
         self.entry_1_var.set('Path: ' + path + ', Row: ' + row + ' ' + str(dt.date()))
-        self.mc.first_path = dir_
+        self.mc.set_first_path(dir_)
 
     def select_second_path(self):
         dir_, path, row, dt = self.select_path()
         self.entry_2_var.set('Path: ' + path + ', Row: ' + row + ' ' + str(dt.date()))
-        self.mc.second_path = dir_
+        self.mc.set_second_path(dir_)
 
     def clear_path(self):
         self.entry_1_var.set('Path: Row:')
         self.entry_2_var.set('Path: Row:')
-        self.mc.first_path = self.mc.second_path = None
+        self.mc.clear_paths()
 
     @staticmethod
     def error(msg):
