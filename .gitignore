@@ -130,3 +130,6 @@ dmypy.json
 
 # .idea
 .idea
+
+# data folder with landsat 8 data
+data
