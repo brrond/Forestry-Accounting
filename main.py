@@ -234,7 +234,6 @@ class MainGUIController:
         if Path.exists(path) and Path.is_dir(path):
             f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(path).glob('*')]))
             if f is None or len(f) == 0:
-                # TODO: Inform user about error
                 return
             f = f[0]
             with open(f, 'r') as file:
@@ -245,7 +244,7 @@ class MainGUIController:
                 dt = properties['datetime']
                 dt = dateutil.parser.isoparse(dt)
                 return path, row, dt
-        # TODO: Inform user about error
+        return
 
     def set_first_path(self, path: Path):
         """
@@ -280,7 +279,7 @@ class MainGUIController:
 
     def visualize_coordinates(self):
         if len(self.coordinates) == 0:
-            # TODO: Inform user about error
+            Application.error('No coordinates specified')
             return
 
         p = Polygon(self.get_coordinates_as_array())
@@ -291,12 +290,12 @@ class MainGUIController:
     def get_loader(self, loader_index: int) -> Loader:
         if loader_index == 1:
             if self.loader1 is None:
-                # TODO: Inform user about error
+                Application.error('Select path to first directory')
                 raise ValueError('No first loader found')
             return self.loader1
         else:
             if self.loader2 is None:
-                # TODO: Inform user about error
+                Application.error('Select path to second directory')
                 raise ValueError('No second loader found')
             return self.loader2
 
@@ -305,6 +304,9 @@ class MainGUIController:
         in_proj = Proj(init='epsg:4326')
 
         new_coords = transform(in_proj, out_proj, self.get_coordinates_as_array())
+        if len(new_coords) == 0:
+            Application.error('No coordinates specified')
+            raise ValueError('No coordinates specified')
         return Polygon(new_coords)
 
     @staticmethod
