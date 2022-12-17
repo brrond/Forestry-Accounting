@@ -244,7 +244,7 @@ class MainGUIController:
                 dt = properties['datetime']
                 dt = dateutil.parser.isoparse(dt)
                 return path, row, dt
-        return
+        raise FileNotFoundError()
 
     def set_first_path(self, path: Path):
         """
