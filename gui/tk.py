@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter.messagebox import showerror, showinfo
 from tkinter.filedialog import askdirectory
+from tkinter.ttk import Progressbar
 
 from pathlib import Path
 import os
@@ -93,10 +94,16 @@ class Application(tk.Tk):
     Main Application class for GUI using tkinter as backend
     """
 
+    self = None  # aka Singleton
+
     def __init__(self, main_controller):
         super().__init__()
 
+        if Application.self is None:
+            Application.self = self
+
         self.mc = self.main_controller = main_controller
+        self.pb = None  # ProgressBar will be created when necessary
 
         # init default window settings
         self.wm_title('Forestry')
@@ -253,6 +260,33 @@ class Application(tk.Tk):
         """
         showerror('Error', msg)
 
+    """
+    start_progressbar is invoked from within of the class -> progress bar is initialized (via init_progressbar)
+        and sets update_progressbar function (works as interval in JS)
+    update_progressbar is called every n ms, if percentage (on main controller) is 1 (100%) PB will be destroyed.
+    destroy_progressbar is called to destroy progressbar (only way). 
+    """
+
+    def init_progressbar(self):
+        self.pb = ProgressbarDialog(self)
+
+    def update_progressbar(self):
+        p = self.mc.percentage
+        if p == 1:
+            self.destroy_progressbar()
+            return
+        self.pb.update_pb(p)
+        self.after(20, self.update_progressbar)
+
+    def destroy_progressbar(self):
+        self.pb.destroy()
+        self.pb = None
+
+    @staticmethod
+    def start_progressbar():
+        Application.self.after(1, Application.self.init_progressbar)
+        Application.self.after(20, Application.self.update_progressbar)
+
 
 class CoordinatesDialog(tk.Toplevel):
     """
@@ -329,3 +363,51 @@ class CoordinatesDialog(tk.Toplevel):
                     showerror('Error', 'Wrong coordinates input. Must be entered two numbers in form: "lat, lon".')
         else:
             showerror('Error', 'Wrong coordinates input. Should be entered in form: "lat, lon".')
+
+
+class ProgressbarDialog(tk.Toplevel):
+    """
+    A class that shows user progressbar in new window.
+    This window is impossible to close
+    """
+
+    def __init__(self, master):
+        super().__init__(master)
+
+        self.master = self.root = master
+        self.percentage = 0  # progress in percent (from 0 to 1)
+        self.bar_size = 100
+
+        # init ui
+        self.wm_title('Operation in progress')
+        self.wm_geometry('300x200+100+100')
+        self.wm_resizable(False, False)
+
+        # init grid layout
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # init gui elements
+        tk.Label(self, text='Current operation takes some time').grid(column=0, row=0)
+        self.pb = Progressbar(self, orient='horizontal', length=self.bar_size, mode='determinate')
+        self.pb.grid(column=0, row=1)
+        self.pb_text = tk.Label(self, text='% left:')  # Label will be changed every update
+        self.pb_text.grid(column=0, row=2)
+
+        # make exit not possible
+        def empty():
+            pass
+        self.protocol('WM_DELETE_WINDOW', empty)
+
+    def update_pb(self, percentage):
+        """
+        Method updates PB
+
+        :param percentage: of progress (from 0 to 1)
+        """
+
+        delta = percentage - self.percentage  # calculate delta of progress
+        self.pb.step(delta*self.bar_size)  # calculate and apply delta
+        self.percentage = percentage  # save new previous percentage
+        self.pb_text.configure(text=str(round(self.percentage * 100_00) / 100.) + '%')  # update text
+        self.update()  # update widget

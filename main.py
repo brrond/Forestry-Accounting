@@ -10,6 +10,7 @@ import re
 
 # general purpose libs
 import multiprocessing
+import threading
 import numpy as np
 import cv2
 
@@ -18,9 +19,14 @@ from pyproj.crs import CRS
 from pyproj.transformer import Transformer
 from shapely.geometry import Polygon
 from matplotlib import pyplot as plt
+from matplotlib import patches as ptchs
 from rasterio import mask as msk
 import rasterio
 
+# Machine learning modules
+import tensorflow as tf
+
+from scripts.imageprocessing import ImageProcessing
 
 class Loader:
     """
@@ -200,6 +206,8 @@ class MainGUIController:
         self.first_path = self.second_path = None  # directory paths
         self.loader1 = self.loader2 = None  # loaders
 
+        self.percentage = 0  # for long-performing task
+
     def get_coordinates_as_array(self) -> np.ndarray:
         """
         Because coordinates stored as list of strings in special format this method returns coordinates as numpy array.
@@ -311,15 +319,15 @@ class MainGUIController:
         return Polygon(new_coords)
 
     @staticmethod
-    def plot_img_in_another_process(img, title=None):
-        multiprocessing.Process(target=plot_img, args=(img, title)).start()
+    def plot_img_in_another_process(img, title=None, legend_handles=None):
+        multiprocessing.Process(target=plot_img, args=(img, title, legend_handles)).start()
 
     def get_img(self, method, ps, title):
         try:
             rgb = method(ps)
             self.plot_img_in_another_process(rgb, title)
         except:
-            showerror("Error", "Coordinates don't specified correctly")
+            Application.error('Coordinates don\'t specified correctly')
             # TODO: Inform user about error
             pass
 
@@ -353,11 +361,84 @@ class MainGUIController:
         p = self.get_polygon(loader.crs)
         self.get_img(loader.ndvi, [p], 'NDVI 2')
 
+    """
+    deforestation method is called with specific deforestation model passed.
+    This method creates new daemon Thread with deforestation_ as target.
+    deforestation_ performs:
+        NDIV1 & NDVI2 load
+        concatenates NDVIs in x (input to model)
+        loads specified model
+        runs loop (so computer doesn't run out of memory) with percentage modification (self.percentage)
+        after prediction phase, concatenates all obtained images into one
+        takes only necessary part of the image
+        displays it
+    """
 
-def plot_img(img, title=None):
+    def deforestation(self, model_file):
+        self.percentage = 0
+        foo_thread = threading.Thread(target=lambda: self.deforestation_(model_file))  # create Thread
+        foo_thread.daemon = True
+        Application.start_progressbar()  # mainloop starts progressbar and always active to user commands
+        foo_thread.start()  # starts TF process
+
+    def deforestation_(self, model_file):
+        # TODO: Add caching system
+        loader1, loader2 = self.get_loader(1), self.get_loader(2)  # get both loaders
+        p = self.get_polygon(loader1.crs)  # get coordinates restriction
+
+        # get both nvdi and concat inputs
+        ndvi1 = loader1.ndvi([p])
+        ndvi2 = loader2.ndvi([p])
+        ndvi1.shape = ndvi1.shape[:2] + (1,)
+        ndvi2.shape = ndvi2.shape[:2] + (1,)
+        x = np.concatenate((ndvi1, ndvi2), -1)
+
+        # load model
+        model = tf.keras.models.load_model('assets/models/de_forestation/' + str(model_file))
+        original_size = x.shape[:2]
+        x = ImageProcessing.add_blank_to_npt(x)  # to correctly process input image must be in shapes of power of two
+        resized_size = x.shape[:2]
+
+        # define legend options
+        colors = ['k', 'r', 'g', 'y', 'b']  # define matplotlib colors
+        labels = ['No data', 'Deforestation', 'Forestation', 'No change', 'Water body']  # define labels
+        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
+
+        if x.shape[0] <= 128 and x.shape[1] <= 128:  # if images is small single run can be performed
+            prediction = model.predict(x.reshape((1,) + x.shape))
+            self.plot_img_in_another_process(prediction[0], 'De-forestation', legend)
+            self.percentage = 1  # although no progressbar is needed, it must be destroyed
+        else:
+            x = ImageProcessing.split_img(x, 64)  # split images to mini batches
+            split_shape = x.shape[:-1]
+            x.shape = (-1, 64, 64, 2)  # combine mini batches in array
+            y = np.zeros(x.shape[:-1] + (5,))  # create output placeholder
+            N = x.shape[0]  # number of batches
+            for i in range(0, N, 4):  # actual batch size is 4
+                y[i:i+4] = model.predict(x[i:i+4])  # process and save to output placeholder
+                self.percentage = i / N  # calculate percentage (for progressbar)
+            self.percentage = 1  # after all is done progressbar must be destroyed
+
+            # concat them by pairs
+            y.shape = split_shape + (5,)
+            y = np.concatenate(np.concatenate(y, 1), 1)  # have no idea, why it works
+            assert y.shape[:2] == resized_size  # just in case something went wrong
+
+            y = y.argmax(-1)[:original_size[0], :original_size[1]].astype('uint8')  # obtain necessary part only
+            img = np.zeros((y.shape[0], y.shape[1], 3), dtype='uint8')  # create placeholder of image
+            colors_in_rgb = [[255, 0, 0], [0, 255, 0], [255, 255, 0], [0, 0, 255]]  # define actual colors
+            colors_in_rgb = np.array(colors_in_rgb).astype('uint8')
+            for i in range(1, 5):
+                img[y == i] = colors_in_rgb[i - 1]
+            self.plot_img_in_another_process(img, 'De-forestation', legend)
+
+
+def plot_img(img, title=None, legend_handles=None):
     plt.imshow(img)
     if title is not None:
         plt.title(title)
+    if legend_handles is not None:
+        plt.legend(handles=legend_handles)
     plt.axis(False)
     plt.show()
 

@@ -55,3 +55,28 @@ class ImageProcessing:
                 res[i][j] = img_arr[i * size: i * size + size,
                                     j * size: j * size + size]
         return res
+
+    @staticmethod
+    def add_blank_to_npt(img_arr):
+        """
+        Adds blank spaces (zeros) so image can match sizes. All zeros are added along right and bottom sides.
+        Sizes defined as nearest power of two, that is greater than actual image.
+
+        :param img_arr: input image as numpy array.
+
+        :return: numpy array that represent same image with additional blank pixels.
+        """
+
+        img_h, img_w = img_arr.shape[:2]
+        width = height = 0
+        for i in range(16):
+            n = 2**i
+            if width == 0:
+                if img_w <= n:
+                    width = n
+            if height == 0:
+                if img_h <= n:
+                    height = n
+            if height != 0 and width != 0:
+                break
+        return ImageProcessing.add_blank(img_arr, width, height)
