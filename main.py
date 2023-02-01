@@ -14,7 +14,8 @@ import numpy as np
 import cv2
 
 # coord modules
-from pyproj import Proj, transform as trns
+from pyproj.crs import CRS
+from pyproj.transformer import Transformer
 from shapely.geometry import Polygon
 from matplotlib import pyplot as plt
 from rasterio import mask as msk
@@ -300,8 +301,8 @@ class MainGUIController:
             return self.loader2
 
     def get_polygon(self, crs) -> Polygon:
-        out_proj = Proj(init=str(crs).lower())
-        in_proj = Proj(init='epsg:4326')
+        out_proj = CRS.from_wkt(crs.wkt)
+        in_proj = 'epsg:4326'
 
         new_coords = transform(in_proj, out_proj, self.get_coordinates_as_array())
         if len(new_coords) == 0:
@@ -318,6 +319,7 @@ class MainGUIController:
             rgb = method(ps)
             self.plot_img_in_another_process(rgb, title)
         except:
+            showerror("Error", "Coordinates don't specified correctly")
             # TODO: Inform user about error
             pass
 
@@ -390,8 +392,10 @@ def transform(in_proj, out_proj, coordinates):
     """
 
     new_coords = []
+    transformer = Transformer.from_crs(in_proj, out_proj)
     for coord in coordinates:
-        new_coords.append(trns(in_proj, out_proj, coord[1], coord[0]))
+        #new_coords.append(transformer.transform(coord[1], coord[0]))
+        new_coords.append(transformer.transform(coord[0], coord[1]))
     return new_coords
 
 
