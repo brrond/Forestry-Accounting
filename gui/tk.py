@@ -3,10 +3,13 @@ from tkinter.messagebox import showerror, showinfo
 from tkinter.filedialog import askdirectory
 
 from pathlib import Path
+import os
 
 ASSETS_DIR = Path('assets')
 IMAGES_DIR = ASSETS_DIR / 'images'
 TMP_DIR = ASSETS_DIR / 'tmp'
+MODELS_DIR = ASSETS_DIR / 'models'
+DE_FORESTATION_MODELS = os.listdir(MODELS_DIR / 'de_forestation')
 
 
 class ListVariable(tk.Variable):
@@ -143,37 +146,62 @@ class Application(tk.Tk):
         # init output frame
         output_frame = tk.Frame(self)
         tk.Label(output_frame, text='RGB 1').grid(column=0, row=0)
-        tk.Label(output_frame, text='NDVI 1').grid(column=1, row=0)
-        tk.Label(output_frame, text='NDVI 2').grid(column=2, row=0)
-        tk.Label(output_frame, text='RGB 2').grid(column=3, row=0)
-        self.pi_ndvi = tk.PhotoImage(file=IMAGES_DIR / 'ndvi.png')
+        tk.Label(output_frame, text='RGB 2').grid(column=1, row=0)
         self.pi_rgb = tk.PhotoImage(file=IMAGES_DIR / 'rgb.png')
         tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb1).grid(column=0, row=1)
-        tk.Button(output_frame, image=self.pi_ndvi, command=self.mc.ndvi1).grid(column=1, row=1)
-        tk.Button(output_frame, image=self.pi_ndvi, command=self.mc.ndvi2).grid(column=2, row=1)
-        tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb2).grid(column=3, row=1)
+        tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb2).grid(column=1, row=1)
 
         tk.Label(output_frame, text='RGB stretched').grid(column=0, row=2)
-        tk.Label(output_frame, text='GNDVI 1').grid(column=1, row=2)
-        tk.Label(output_frame, text='GNDVI 2').grid(column=2, row=2)
-        tk.Label(output_frame, text='RGB stretched').grid(column=3, row=2)
-        self.pi_gndvi = tk.PhotoImage(file=IMAGES_DIR / 'gndvi.png')
+        tk.Label(output_frame, text='RGB stretched').grid(column=1, row=2)
         self.pi_rgb_s = tk.PhotoImage(file=IMAGES_DIR / 'rgb_stretching.png')
         tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc.rgb1_s).grid(column=0, row=3)
-        tk.Button(output_frame, image=self.pi_gndvi).grid(column=1, row=3)
-        tk.Button(output_frame, image=self.pi_gndvi).grid(column=2, row=3)
-        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc.rgb2_s).grid(column=3, row=3)
+        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc.rgb2_s).grid(column=1, row=3)
 
-        tk.Label(output_frame, text='NDWI 1').grid(column=1, row=4)
-        tk.Label(output_frame, text='NDWI 2').grid(column=2, row=4)
-        self.pi_ndwi = tk.PhotoImage(file=IMAGES_DIR / 'ndwi.png')
-        tk.Button(output_frame, image=self.pi_ndwi).grid(column=1, row=5)
-        tk.Button(output_frame, image=self.pi_ndwi).grid(column=2, row=5)
-
-        tk.Label(output_frame, text='De-forestation map').grid(column=1, row=6, columnspan=2)
+        tk.Label(output_frame, text='De-forestation map').grid(column=0, row=4, columnspan=2)
         self.pi_def = tk.PhotoImage(file=IMAGES_DIR / 'def.png')
-        tk.Button(output_frame, image=self.pi_def).grid(column=1, row=7, columnspan=2)
+        tk.Button(output_frame, image=self.pi_def,
+                  command=lambda: self.mc.deforestation(self.deforestation_model_var.get())
+                  ).grid(column=0, row=5, columnspan=2)
         output_frame.grid(column=0, row=2)
+
+        # init menu
+        menubar = tk.Menu(self, tearoff=0)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label='Exit', command=self.destroy)
+
+        editmenu = tk.Menu(menubar, tearoff=0)
+        editmenu.add_command(label='Select first Landsat folder', command=self.select_first_path)
+        editmenu.add_command(label='Select second Landsat folder', command=self.select_second_path)
+        editmenu.add_separator()
+        editmenu.add_command(label='Set coordinates', command=lambda: CoordinatesDialog(self, self.coords_var))
+        editmenu.add_command(label='Clear coordinates', command=self.coords_var.clear)
+
+        modelsmenu = tk.Menu(menubar, tearoff=0)
+        self.deforestation_model_var = tk.StringVar()
+        self.deforestation_model_var.set(DE_FORESTATION_MODELS[-1])
+        deforestation_modelmenu = tk.Menu(modelsmenu, tearoff=0)
+        for i, model in enumerate(DE_FORESTATION_MODELS):
+            deforestation_modelmenu.add_radiobutton(label=model, variable=self.deforestation_model_var, value=model)
+        modelsmenu.add_cascade(label='De-forestation', menu=deforestation_modelmenu)
+
+        plotmenu = tk.Menu(menubar, tearoff=0)
+        # TODO: Add indices
+        indices = ['NDVI', 'GNDVI', 'NDWI']
+        commands1 = [self.mc.ndvi1]
+        commands2 = [self.mc.ndvi2]
+        indices1menu = tk.Menu(plotmenu, tearoff=0)
+        indices2menu = tk.Menu(plotmenu, tearoff=0)
+        for index, command1, command2 in zip(indices, commands1, commands2):
+            indices1menu.add_command(label=index, command=command1)
+            indices2menu.add_command(label=index, command=command2)
+        plotmenu.add_cascade(label='Indices I', menu=indices1menu)
+        plotmenu.add_cascade(label='Indices II', menu=indices2menu)
+
+        menubar.add_cascade(label='File', menu=filemenu)
+        menubar.add_cascade(label='Edit', menu=editmenu)
+        menubar.add_cascade(label='Models', menu=modelsmenu)
+        menubar.add_cascade(label='Plots', menu=plotmenu)
+        self.config(menu=menubar)
 
     def start(self):
         self.mainloop()
