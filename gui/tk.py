@@ -155,14 +155,14 @@ class Application(tk.Tk):
         tk.Label(output_frame, text='RGB 1').grid(column=0, row=0)
         tk.Label(output_frame, text='RGB 2').grid(column=1, row=0)
         self.pi_rgb = tk.PhotoImage(file=IMAGES_DIR / 'rgb.png')
-        tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb1).grid(column=0, row=1)
-        tk.Button(output_frame, image=self.pi_rgb, command=self.mc.rgb2).grid(column=1, row=1)
+        tk.Button(output_frame, image=self.pi_rgb, command=self.mc(1, 'rgb')).grid(column=0, row=1)
+        tk.Button(output_frame, image=self.pi_rgb, command=self.mc(2, 'rgb')).grid(column=1, row=1)
 
         tk.Label(output_frame, text='RGB stretched').grid(column=0, row=2)
         tk.Label(output_frame, text='RGB stretched').grid(column=1, row=2)
         self.pi_rgb_s = tk.PhotoImage(file=IMAGES_DIR / 'rgb_stretching.png')
-        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc.rgb1_s).grid(column=0, row=3)
-        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc.rgb2_s).grid(column=1, row=3)
+        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc(1, 'rgb_s')).grid(column=0, row=3)
+        tk.Button(output_frame, image=self.pi_rgb_s, command=self.mc(2, 'rgb_s')).grid(column=1, row=3)
 
         tk.Label(output_frame, text='De-forestation map').grid(column=0, row=4, columnspan=2)
         self.pi_def = tk.PhotoImage(file=IMAGES_DIR / 'def.png')
@@ -194,15 +194,25 @@ class Application(tk.Tk):
         plotmenu = tk.Menu(menubar, tearoff=0)
         # TODO: Add indices
         indices = ['NDVI', 'GNDVI', 'NDWI']
-        commands1 = [self.mc.ndvi1]
-        commands2 = [self.mc.ndvi2]
+        commands1 = [self.mc(1, 'ndvi'), self.mc(1, 'gndvi')]
+        commands2 = [self.mc(2, 'ndvi'), self.mc(2, 'gndvi')]
         indices1menu = tk.Menu(plotmenu, tearoff=0)
         indices2menu = tk.Menu(plotmenu, tearoff=0)
         for index, command1, command2 in zip(indices, commands1, commands2):
             indices1menu.add_command(label=index, command=command1)
             indices2menu.add_command(label=index, command=command2)
-        plotmenu.add_cascade(label='Indices I', menu=indices1menu)
-        plotmenu.add_cascade(label='Indices II', menu=indices2menu)
+        approximatedvisualizations1menu = tk.Menu(plotmenu, tearoff=0)
+        approximatedvisualizations2menu = tk.Menu(plotmenu, tearoff=0)
+        approximatedvisualizations = ['Land classification (NDVI based)']
+        commands1 = [self.mc(1, 'ndvi_classes')]
+        commands2 = [self.mc(2, 'ndvi_classes')]
+        for title, command1, command2 in zip(approximatedvisualizations, commands1, commands2):
+            approximatedvisualizations1menu.add_command(label=title, command=command1)
+            approximatedvisualizations2menu.add_command(label=title, command=command2)
+        plotmenu.add_cascade(label='Spectral Indices I', menu=indices1menu)
+        plotmenu.add_cascade(label='Spectral Indices II', menu=indices2menu)
+        plotmenu.add_cascade(label='Approximated Visualizations I', menu=approximatedvisualizations1menu)
+        plotmenu.add_cascade(label='Approximated Visualizations II', menu=approximatedvisualizations2menu)
 
         menubar.add_cascade(label='File', menu=filemenu)
         menubar.add_cascade(label='Edit', menu=editmenu)

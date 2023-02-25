@@ -28,6 +28,8 @@ import tensorflow as tf
 
 from scripts.imageprocessing import ImageProcessing
 
+import time
+
 class Loader:
     """
     A class that represents abstraction to load landsat data using rasterio.
@@ -46,6 +48,9 @@ class Loader:
         a = rasterio.open(self.dir / self.bands[0])
         self.crs = a.crs
         del a
+
+    visualizations = ['rgb', 'rgb_s', 'ndvi', 'gndvi', 'ndvi_classes']
+    indices = ['ndvi', 'gndvi']
 
     def load(self, band: int):
         """
@@ -137,6 +142,37 @@ class Loader:
 
         return ndvi
 
+    def gndvi(self, coordinates=None):
+        """
+        A method that returns Green Normalized Difference Vegetation Index.
+
+        :param coordinates: optional parameter that allows crop to specified coordinates. Coordinates must be in the same CRS.
+
+        :return: numpy array that represents one channel image as float64 (8 byte pixel) array with HEIGHT x WIDTH x 1. Range of each pixel is between [-1., 1.].
+        """
+
+        # load red and near-red channels
+        g = self.load(2)
+        nir = self.load(4)
+
+        if coordinates is None:
+            # TODO: Return full size image
+            pass
+
+        # crop image
+        g = msk.mask(g, coordinates, crop=True)[0]
+        nir = msk.mask(nir, coordinates, crop=True)[0]
+
+        # cast to float64 (8 byte pixel)
+        g = g[0].astype('float64')
+        nir = nir[0].astype('float64')
+
+        # calculate gndvi
+        # may give zero division warning, so nan_to_num is used
+        gndvi = np.nan_to_num((nir - g) / (nir + g))
+
+        return gndvi
+
     def ndvi_classes(self, coordinates=None):
         """
         A method that returns classified image based on Normalized Difference Vegetation Index.
@@ -182,6 +218,13 @@ class Loader:
 
         # cast to uint8 and return
         return ndvi_classification.astype('uint8')
+
+    def get_method(self, name):
+        methods = [self.rgb, self.rgb_s, self.ndvi, self.gndvi, self.ndvi_classes]
+        for method in methods:
+            if name == method.__name__:
+                return method
+        return None
 
 
 class MainGUIController:
@@ -319,17 +362,65 @@ class MainGUIController:
         return Polygon(new_coords)
 
     @staticmethod
-    def plot_img_in_another_process(img, title=None, legend_handles=None):
-        multiprocessing.Process(target=plot_img, args=(img, title, legend_handles)).start()
+    def plot_img_in_another_process(img, title=None, legend_handles=None, cmap=None):
+        multiprocessing.Process(target=plot_img, args=(img, title, legend_handles, cmap)).start()
 
-    def get_img(self, method, ps, title):
+    def get_img(self, method, ps, title, legend_handles=None, cmap=None):
         try:
-            rgb = method(ps)
-            self.plot_img_in_another_process(rgb, title)
+            img = method(ps)
+            self.plot_img_in_another_process(img, title, legend_handles, cmap)
         except:
             Application.error('Coordinates don\'t specified correctly')
             # TODO: Inform user about error
             pass
+
+    '''Next methods can be replaced with reflection'''
+
+    def __call__(self, loader: int, visualization: str):
+        """
+        Returns callable object for visualization.
+
+        :param loader: specifies image loader (1 or 2)
+        :param visualization: specifies visualization type ['rgb', 'rgbs', 'ndvi', 'gndvi', 'ndvi_classes']
+        :return: callable object of specified visualization
+        """
+
+        return lambda: self.call(loader, visualization)
+
+    def call(self, loader_number, visualization):
+        """
+        Plots specified visualization in new matplotlib window.
+
+        :param loader_number: specifies image loader (1 or 2)
+        :param visualization: specifies visualization type
+        """
+
+        AVAILABLE_VISUALIZATIONS = Loader.visualizations
+        INDICES = Loader.indices
+
+        visualization = visualization.strip().lower()
+        if visualization not in AVAILABLE_VISUALIZATIONS:
+            raise ValueError('Visualization must be one of ' + str(AVAILABLE_VISUALIZATIONS))
+
+        if loader_number >= 3 or loader_number <= 0:
+            raise ValueError('Loader number must be 1 or 2')
+        loader = self.get_loader(loader_number)
+
+        p = self.get_polygon(loader.crs)
+
+        colors = ['k', 'b', 'w', 'tab:gray', 'y', 'tab:green', 'g']
+        labels = ['No data', 'Water', 'Clouds', 'Shadow/not living objects', 'Soil/sand', 'Low vegetation',
+                  'Huge vegetation']  # define labels
+        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
+
+        method = loader.get_method(visualization)
+        self.get_img(method, [p], visualization.upper() + ' ' + str(loader_number),
+                     legend_handles=legend if 'classes' in visualization else None,
+                     cmap='RdYlGn' if visualization in INDICES else None)
+
+    """
+    Next methods are deprecated and should be removed
+    """
 
     def rgb1(self):
         loader = self.get_loader(1)
@@ -360,6 +451,32 @@ class MainGUIController:
         loader = self.get_loader(2)
         p = self.get_polygon(loader.crs)
         self.get_img(loader.ndvi, [p], 'NDVI 2')
+
+    def gndvi1(self):
+        loader = self.get_loader(1)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.gndvi, [p], 'GNDVI 1')
+
+    def gndvi2(self):
+        loader = self.get_loader(2)
+        p = self.get_polygon(loader.crs)
+        self.get_img(loader.gndvi, [p], 'GNDVI 2')
+
+    def classification1(self):
+        loader = self.get_loader(1)
+        p = self.get_polygon(loader.crs)
+        colors = ['k', 'b', 'w', 'tab:gray', 'y', 'tab:green', 'g']
+        labels = ['No data', 'Water', 'Clouds', 'Shadow/not living objects', 'Soil/sand', 'Low vegetation', 'Huge vegetation']  # define labels
+        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
+        self.get_img(loader.ndvi_classes, [p], 'Classes 1', legend)
+
+    def classification2(self):
+        loader = self.get_loader(2)
+        p = self.get_polygon(loader.crs)
+        colors = ['k', 'b', 'w', 'tab:gray', 'y', 'tab:green', 'g']
+        labels = ['No data', 'Water', 'Clouds', 'Shadow/not living objects', 'Soil/sand', 'Low vegetation', 'Huge vegetation']  # define labels
+        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
+        self.get_img(loader.ndvi_classes, [p], 'Classes 1', legend)
 
     """
     deforestation method is called with specific deforestation model passed.
@@ -396,6 +513,8 @@ class MainGUIController:
         # load model
         model = tf.keras.models.load_model('assets/models/de_forestation/' + str(model_file))
         original_size = x.shape[:2]
+        print(original_size)
+        FIRST_TIME_POINT = time.time()
         x = ImageProcessing.add_blank_to_npt(x)  # to correctly process input image must be in shapes of power of two
         resized_size = x.shape[:2]
 
@@ -431,14 +550,17 @@ class MainGUIController:
             for i in range(1, 5):
                 img[y == i] = colors_in_rgb[i - 1]
             self.plot_img_in_another_process(img, 'De-forestation', legend)
+        print('Elapsed time', time.time() - FIRST_TIME_POINT)
 
 
-def plot_img(img, title=None, legend_handles=None):
+def plot_img(img, title=None, legend_handles=None, cmap=None):
     plt.imshow(img)
     if title is not None:
         plt.title(title)
     if legend_handles is not None:
         plt.legend(handles=legend_handles)
+    if cmap is not None:
+        plt.set_cmap(cmap)
     plt.axis(False)
     plt.show()
 
