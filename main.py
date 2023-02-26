@@ -199,6 +199,12 @@ class Loader:
         return None
 
 
+class LandsatData(dict):
+    def __init__(self, row, path, dt,):
+        super().__init__()
+
+
+
 class MainGUIController:
     """
     A class that manipulates with data. Represents Controller in MVC pattern.
@@ -289,6 +295,27 @@ class MainGUIController:
 
         self.loader2 = Loader(path)  # create loader
         self.second_path = path  # save path
+
+    # TODO: Move similar code to new method
+    def get_first_json(self):
+        if self.first_path is None:
+            return {}
+
+        f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(self.first_path).glob('*')]))
+        if f is None or len(f) == 0:
+            return
+        f = f[0]
+        return json.load(open(f, 'r'))
+
+    def get_second_json(self):
+        if self.second_path is None:
+            return {}
+
+        f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(self.second_path).glob('*')]))
+        if f is None or len(f) == 0:
+            return
+        f = f[0]
+        return json.load(open(f, 'r'))
 
     def clear_paths(self):
         """
@@ -387,66 +414,6 @@ class MainGUIController:
                      cmap='RdYlGn' if visualization in INDICES else None)
 
     """
-    Next methods are deprecated and should be removed
-    """
-
-    def rgb1(self):
-        loader = self.get_loader(1)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.rgb, [p], 'RGB 1')
-
-    def rgb2(self):
-        loader = self.get_loader(2)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.rgb, [p], 'RGB 2')
-
-    def rgb1_s(self):
-        loader = self.get_loader(1)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.rgb_s, [p], 'RGB 1 Stretched')
-
-    def rgb2_s(self):
-        loader = self.get_loader(2)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.rgb_s, [p], 'RGB 2 Stretched')
-
-    def ndvi1(self):
-        loader = self.get_loader(1)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.ndvi, [p], 'NDVI 1')
-
-    def ndvi2(self):
-        loader = self.get_loader(2)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.ndvi, [p], 'NDVI 2')
-
-    def gndvi1(self):
-        loader = self.get_loader(1)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.gndvi, [p], 'GNDVI 1')
-
-    def gndvi2(self):
-        loader = self.get_loader(2)
-        p = self.get_polygon(loader.crs)
-        self.get_img(loader.gndvi, [p], 'GNDVI 2')
-
-    def classification1(self):
-        loader = self.get_loader(1)
-        p = self.get_polygon(loader.crs)
-        colors = ['k', 'b', 'w', 'tab:gray', 'y', 'tab:green', 'g']
-        labels = ['No data', 'Water', 'Clouds', 'Shadow/not living objects', 'Soil/sand', 'Low vegetation', 'Huge vegetation']  # define labels
-        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
-        self.get_img(loader.ndvi_classes, [p], 'Classes 1', legend)
-
-    def classification2(self):
-        loader = self.get_loader(2)
-        p = self.get_polygon(loader.crs)
-        colors = ['k', 'b', 'w', 'tab:gray', 'y', 'tab:green', 'g']
-        labels = ['No data', 'Water', 'Clouds', 'Shadow/not living objects', 'Soil/sand', 'Low vegetation', 'Huge vegetation']  # define labels
-        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
-        self.get_img(loader.ndvi_classes, [p], 'Classes 1', legend)
-
-    """
     deforestation method is called with specific deforestation model passed.
     This method creates new daemon Thread with deforestation_ as target.
     deforestation_ performs:
@@ -472,8 +439,8 @@ class MainGUIController:
         p = self.get_polygon(loader1.crs)  # get coordinates restriction
 
         # get both nvdi and concat inputs
-        ndvi1 = loader1.ndvi([p])
-        ndvi2 = loader2.ndvi([p])
+        ndvi1 = loader1.ndvi([p] if p is not None else None)
+        ndvi2 = loader2.ndvi([p] if p is not None else None)
         ndvi1.shape = ndvi1.shape[:2] + (1,)
         ndvi2.shape = ndvi2.shape[:2] + (1,)
         x = np.concatenate((ndvi1, ndvi2), -1)

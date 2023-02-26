@@ -129,6 +129,13 @@ class Application(tk.Tk):
         tk.Button(input_frame, text='Select', command=self.select_first_path).grid(column=2, row=0)
         tk.Button(input_frame, text='Select', command=self.select_second_path).grid(column=2, row=1)
 
+        self.button_info1 = tk.Button(input_frame, text='Info', command=self.info_first_path)
+        self.button_info1.grid(column=3, row=0)
+        self.button_info1['state'] = 'disabled'
+        self.button_info2 = tk.Button(input_frame, text='Info', command=self.info_second_path)
+        self.button_info2.grid(column=3, row=1)
+        self.button_info2['state'] = 'disabled'
+
         tk.Button(input_frame, text='Clear', command=self.clear_path).grid(column=0, row=2, columnspan=3, sticky='EW',
                                                                            pady=5)
         tk.Button(input_frame, text='Exit', command=self.destroy).grid(column=0, row=3, columnspan=3, sticky='EW',
@@ -249,16 +256,28 @@ class Application(tk.Tk):
     def select_first_path(self):
         dir_, path, row, dt = self.select_path()
         self.entry_1_var.set('Path: ' + path + ', Row: ' + row + ' ' + str(dt.date()))
+        self.button_info1['state'] = 'normal'
         self.mc.set_first_path(dir_)
 
     def select_second_path(self):
         dir_, path, row, dt = self.select_path()
         self.entry_2_var.set('Path: ' + path + ', Row: ' + row + ' ' + str(dt.date()))
+        self.button_info2['state'] = 'normal'
         self.mc.set_second_path(dir_)
+
+    def info_first_path(self):
+        json = self.mc.get_first_json()
+        JSONVisualizer(self, json)
+
+    def info_second_path(self):
+        json = self.mc.get_second_json()
+        JSONVisualizer(self, json)
 
     def clear_path(self):
         self.entry_1_var.set('Path: Row:')
         self.entry_2_var.set('Path: Row:')
+        self.button_info1['state'] = 'disabled'
+        self.button_info2['state'] = 'disabled'
         self.mc.clear_paths()
 
     @staticmethod
@@ -421,3 +440,57 @@ class ProgressbarDialog(tk.Toplevel):
         self.percentage = percentage  # save new previous percentage
         self.pb_text.configure(text=str(round(self.percentage * 100_00) / 100.) + '%')  # update text
         self.update()  # update widget
+
+
+class JSONVisualizer(tk.Toplevel):
+    def __init__(self, master, json):
+        super().__init__(master)
+
+        self.master = self.root = master
+
+        # init ui
+        self.wm_title('JSON Viewer')
+        self.wm_geometry('500x500+100+100')
+        self.wm_resizable(False, False)
+
+        # init grid layout
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # init gui elements
+        tree = tk.ttk.Treeview(self)
+        tree.column('# 0', width=2000)
+
+        # attach a Horizontal (x) scrollbar to the frame
+        treeXScroll = tk.ttk.Scrollbar(self, orient='horizontal')
+        treeXScroll.configure(command=tree.xview)
+        tree.configure(xscrollcommand=treeXScroll.set)
+
+        def add_json_array_to_tree(arr, parent=''):
+            for el in arr:
+                if type(el).__name__ == 'dict':
+                    id_of_inserted_element = tree.insert(parent, 'end')
+                    add_json_object_to_tree(el, id_of_inserted_element)
+                    continue
+                elif type(el).__name__ == 'list':
+                    id_of_inserted_element = tree.insert(parent, 'end')
+                    add_json_array_to_tree(el, id_of_inserted_element)
+                    continue
+                tree.insert(parent, 'end', text=el)
+
+        def add_json_object_to_tree(obj, parent=''):
+            keys = list(obj.keys())
+            for key in keys:
+                data = obj[key]
+                id_of_inserted_element = tree.insert(parent, 'end', text=key)
+                if type(data).__name__ == 'list':
+                    add_json_array_to_tree(data, id_of_inserted_element)
+                elif type(data).__name__ == 'dict':
+                    add_json_object_to_tree(data, id_of_inserted_element)
+                else:
+                    tree.insert(id_of_inserted_element, 'end', text=str(data))
+
+        add_json_object_to_tree(json)
+        tree.grid(column=0, row=0, sticky=('NSEW'))
+        treeXScroll.grid(column=0, row=1, sticky='WE')
+
