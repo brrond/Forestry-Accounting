@@ -30,6 +30,7 @@ from scripts.imageprocessing import ImageProcessing
 
 import time
 
+
 class Loader:
     """
     A class that represents abstraction to load landsat data using rasterio.
@@ -343,8 +344,6 @@ class MainGUIController:
         except:
             Application.error('Coordinates don\'t specified correctly')
 
-    '''Next methods can be replaced with reflection'''
-
     def __call__(self, loader: int, visualization: str):
         """
         Returns callable object for visualization.
@@ -530,6 +529,7 @@ def plot_img(img, title=None, legend_handles=None, cmap=None):
         plt.legend(handles=legend_handles)
     if cmap is not None:
         plt.set_cmap(cmap)
+        plt.colorbar()
     plt.axis(False)
     plt.show()
 
