@@ -63,6 +63,13 @@ class Loader:
 
         return rasterio.open(self.dir / self.bands[band])
 
+    @staticmethod
+    def _crop(src, coordinates):
+        if coordinates is not None:
+            return msk.mask(src, coordinates, crop=True)[0][0].astype('float64')
+        else:
+            return src.read(1).astype('float64')
+
     def rgb(self, coordinates=None):
         """
         A method that returns RGB image of current satellite snapshot.
@@ -77,21 +84,9 @@ class Loader:
         g = self.load(2)
         r = self.load(3)
 
-        if coordinates is None:
-            # TODO: Return full size image
-            pass
-
-        # crop to coordinates
-        # get actual image [0]
-        # *[1] - represents mask transformation (Affine)
-        r = msk.mask(r, coordinates, crop=True)[0]
-        g = msk.mask(g, coordinates, crop=True)[0]
-        b = msk.mask(b, coordinates, crop=True)[0]
-
-        # cast to float64 datatype (the biggest available by default)
-        r = r[0].astype('float64')
-        g = g[0].astype('float64')
-        b = b[0].astype('float64')
+        b = self._crop(b, coordinates)
+        g = self._crop(g, coordinates)
+        r = self._crop(r, coordinates)
 
         # merge with cv2
         # simply combines three channels into one array
@@ -124,17 +119,8 @@ class Loader:
         r = self.load(3)
         nir = self.load(4)
 
-        if coordinates is None:
-            # TODO: Return full size image
-            pass
-
-        # crop image
-        r = msk.mask(r, coordinates, crop=True)[0]
-        nir = msk.mask(nir, coordinates, crop=True)[0]
-
-        # cast to float64 (8 byte pixel)
-        r = r[0].astype('float64')
-        nir = nir[0].astype('float64')
+        r = self._crop(r, coordinates)
+        nir = self._crop(nir, coordinates)
 
         # calculate ndvi
         # may give zero division warning, so nan_to_num is used
@@ -155,17 +141,8 @@ class Loader:
         g = self.load(2)
         nir = self.load(4)
 
-        if coordinates is None:
-            # TODO: Return full size image
-            pass
-
-        # crop image
-        g = msk.mask(g, coordinates, crop=True)[0]
-        nir = msk.mask(nir, coordinates, crop=True)[0]
-
-        # cast to float64 (8 byte pixel)
-        g = g[0].astype('float64')
-        nir = nir[0].astype('float64')
+        g = self._crop(g, coordinates)
+        nir = self._crop(nir, coordinates)
 
         # calculate gndvi
         # may give zero division warning, so nan_to_num is used
@@ -192,13 +169,7 @@ class Loader:
         # load aerosol band
         b1 = self.load(0)
 
-        if coordinates is None:
-            # TODO: Return full size image
-            pass
-
-        # crop and cast to float64
-        b1 = msk.mask(b1, coordinates, crop=True)[0]
-        b1 = b1[0].astype('float64')
+        b1 = self._crop(b1, coordinates)
 
         # isn't the most efficient way to get cloud mask
         # if aerosol layer value (from 0 to 1) is higher then 40% then it's cloud
@@ -357,8 +328,8 @@ class MainGUIController:
 
         new_coords = transform(in_proj, out_proj, self.get_coordinates_as_array())
         if len(new_coords) == 0:
-            Application.error('No coordinates specified')
-            raise ValueError('No coordinates specified')
+            return None
+            # Application.error('No coordinates specified')  # TODO: Add info about full image
         return Polygon(new_coords)
 
     @staticmethod
@@ -371,8 +342,6 @@ class MainGUIController:
             self.plot_img_in_another_process(img, title, legend_handles, cmap)
         except:
             Application.error('Coordinates don\'t specified correctly')
-            # TODO: Inform user about error
-            pass
 
     '''Next methods can be replaced with reflection'''
 
@@ -414,7 +383,7 @@ class MainGUIController:
         legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
 
         method = loader.get_method(visualization)
-        self.get_img(method, [p], visualization.upper() + ' ' + str(loader_number),
+        self.get_img(method, [p] if p is not None else None, visualization.upper() + ' ' + str(loader_number),
                      legend_handles=legend if 'classes' in visualization else None,
                      cmap='RdYlGn' if visualization in INDICES else None)
 
