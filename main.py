@@ -50,8 +50,8 @@ class Loader:
         self.crs = a.crs
         del a
 
-    visualizations = ['rgb', 'rgb_s', 'ndvi', 'gndvi', 'ndvi_classes']
-    indices = ['ndvi', 'gndvi']
+    visualizations = ['rgb', 'rgb_s', 'ndvi', 'gndvi', 'ndvi_classes', 'grvi', 'ndwi']
+    indices = ['ndvi', 'gndvi', 'grvi', 'ndwi']
 
     def load(self, band: int):
         """
@@ -191,8 +191,32 @@ class Loader:
         # cast to uint8 and return
         return ndvi_classification.astype('uint8')
 
+    def grvi(self, coordinates=None):
+        g = self.load(2)
+        nir = self.load(4)
+
+        g = self._crop(g, coordinates)
+        nir = self._crop(nir, coordinates)
+
+        # calculate ndvi
+        # may give zero division warning, so nan_to_num is used
+        grvi = np.nan_to_num(nir/g)
+
+        return grvi
+
+    def ndwi(self, coordinates=None):
+        nir = self.load(4)
+        swir = self.load(5)
+
+        nir = self._crop(nir, coordinates)
+        swir = self._crop(swir, coordinates)
+
+        ndwi = np.nan_to_num((nir - swir) / (nir + swir))
+
+        return ndwi
+
     def get_method(self, name):
-        methods = [self.rgb, self.rgb_s, self.ndvi, self.gndvi, self.ndvi_classes]
+        methods = [self.rgb, self.rgb_s, self.ndvi, self.gndvi, self.ndvi_classes, self.grvi, self.ndwi]
         for method in methods:
             if name == method.__name__:
                 return method
@@ -202,7 +226,6 @@ class Loader:
 class LandsatData(dict):
     def __init__(self, row, path, dt,):
         super().__init__()
-
 
 
 class MainGUIController:

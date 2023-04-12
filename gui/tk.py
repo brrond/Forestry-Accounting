@@ -200,9 +200,9 @@ class Application(tk.Tk):
 
         plotmenu = tk.Menu(menubar, tearoff=0)
         # TODO: Add indices
-        indices = ['NDVI', 'GNDVI', 'NDWI']
-        commands1 = [self.mc(1, 'ndvi'), self.mc(1, 'gndvi')]
-        commands2 = [self.mc(2, 'ndvi'), self.mc(2, 'gndvi')]
+        indices = ['NDVI', 'GNDVI', 'GRVI', 'NDWI']
+        commands1 = [self.mc(1, 'ndvi'), self.mc(1, 'gndvi'), self.mc(1, 'grvi'), self.mc(1, 'ndwi')]
+        commands2 = [self.mc(2, 'ndvi'), self.mc(2, 'gndvi'), self.mc(2, 'grvi'), self.mc(2, 'ndwi')]
         indices1menu = tk.Menu(plotmenu, tearoff=0)
         indices2menu = tk.Menu(plotmenu, tearoff=0)
         for index, command1, command2 in zip(indices, commands1, commands2):
