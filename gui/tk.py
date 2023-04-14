@@ -4,6 +4,7 @@ from tkinter.filedialog import askdirectory
 from tkinter.ttk import Progressbar
 
 from pathlib import Path
+import random
 import os
 
 ASSETS_DIR = Path('assets')
@@ -149,21 +150,11 @@ class Application(tk.Tk):
         def select_coordinates():
             json1, json2 = self.mc.get_first_json(), self.mc.get_second_json()
             if len(json1) == 0 and len(json2) == 0:
-                pass
+                return
             elif len(json1) == 0:
                 x1, y1, x2, y2 = json2['bbox']
-                self.coords_var.clear()
-                self.coords_var.append(str(y1) + ', ' + str(x1))
-                self.coords_var.append(str(y1) + ', ' + str(x2))
-                self.coords_var.append(str(y2) + ', ' + str(x2))
-                self.coords_var.append(str(y2) + ', ' + str(x1))
             elif len(json2) == 0:
                 x1, y1, x2, y2 = json1['bbox']
-                self.coords_var.clear()
-                self.coords_var.append(str(y1) + ', ' + str(x1))
-                self.coords_var.append(str(y1) + ', ' + str(x2))
-                self.coords_var.append(str(y2) + ', ' + str(x2))
-                self.coords_var.append(str(y2) + ', ' + str(x1))
             else:
                 x1_, y1_, x2_, y2_ = json1['bbox']
                 x1, y1, x2, y2 = json2['bbox']
@@ -171,28 +162,59 @@ class Application(tk.Tk):
                 if x1_ > x2 or x1 > x2_ or y1_ > y2 or y1 > y2_:
                     showerror('Error', 'Different paths selected')
                     return
-
                 x1 = max(x1, x1_)
                 y1 = max(y1, y1_)
                 x2 = min(x2, x2_)
                 y2 = min(y2, y2_)
 
-                self.coords_var.clear()
-                self.coords_var.append(str(y1) + ', ' + str(x1))
-                self.coords_var.append(str(y1) + ', ' + str(x2))
-                self.coords_var.append(str(y2) + ', ' + str(x2))
-                self.coords_var.append(str(y2) + ', ' + str(x1))
+            self.coords_var.clear()
+            self.coords_var.append(str(y1) + ', ' + str(x1))
+            self.coords_var.append(str(y1) + ', ' + str(x2))
+            self.coords_var.append(str(y2) + ', ' + str(x2))
+            self.coords_var.append(str(y2) + ', ' + str(x1))
+
+        def select_random_coordinates():
+            json1, json2 = self.mc.get_first_json(), self.mc.get_second_json()
+            if len(json1) == 0 and len(json2) == 0:
+                return
+            elif len(json1) == 0:
+                x1, y1, x2, y2 = json2['bbox']
+            elif len(json2) == 0:
+                x1, y1, x2, y2 = json1['bbox']
+            else:
+                x1_, y1_, x2_, y2_ = json1['bbox']
+                x1, y1, x2, y2 = json2['bbox']
+                if x1_ > x2 or x1 > x2_ or y1_ > y2 or y1 > y2_:
+                    showerror('Error', 'Different paths selected')
+                    return
+                x1 = max(x1, x1_)
+                y1 = max(y1, y1_)
+                x2 = min(x2, x2_)
+                y2 = min(y2, y2_)
+
+            x1 = random.randint(int(x1 * 10000), int(x2 * 10000)) / 10000.
+            x2 = random.randint(int(x1 * 10000), int(x2 * 10000)) / 10000.
+            y1 = random.randint(int(y1 * 10000), int(y2 * 10000)) / 10000.
+            y2 = random.randint(int(y1 * 10000), int(y2 * 10000)) / 10000.
+
+            self.coords_var.clear()
+            self.coords_var.append(str(y1) + ', ' + str(x1))
+            self.coords_var.append(str(y1) + ', ' + str(x2))
+            self.coords_var.append(str(y2) + ', ' + str(x2))
+            self.coords_var.append(str(y2) + ', ' + str(x1))
 
         control_frame = tk.Frame(self)
         self.coords_var = ListVariable(self, self.mc.coordinates, on_update=update_mc_coordinates)
-        tk.Listbox(control_frame, height=4, listvariable=self.coords_var).grid(column=0, row=0, rowspan=4, sticky='NS')
+        tk.Listbox(control_frame, height=4, listvariable=self.coords_var).grid(column=0, row=0, rowspan=5, sticky='NS')
         tk.Button(control_frame, text='Set coordinates', command=lambda: CoordinatesDialog(self, self.coords_var)).grid(
             column=1, row=0, pady=5, sticky='EW')
         tk.Button(control_frame, text='Select from folder', command=select_coordinates).grid(
             column=1, row=1, pady=5, sticky='EW')
-        tk.Button(control_frame, text='Clear coordinates', command=self.coords_var.clear).grid(column=1, row=2, pady=5,
+        tk.Button(control_frame, text='Select random area', command=select_random_coordinates).grid(
+            column=1, row=2, pady=5, sticky='EW')
+        tk.Button(control_frame, text='Clear coordinates', command=self.coords_var.clear).grid(column=1, row=3, pady=5,
                                                                                                sticky='EW')
-        tk.Button(control_frame, text='Visualize', command=self.mc.visualize_coordinates).grid(column=1, row=3, pady=5,
+        tk.Button(control_frame, text='Visualize', command=self.mc.visualize_coordinates).grid(column=1, row=4, pady=5,
                                                                                                sticky='EW')
         control_frame.grid(column=0, row=1)
 
