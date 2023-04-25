@@ -18,6 +18,10 @@ AVAILABLE_MODELS = ['vgg16', 'vgg19',
                     'seresnet18', 
                     'efficientnetb0', 'efficientnetb1', 'efficientnetb2']
 
+AVAILABLE_ARCHITECTURES = [
+    'unet', 'linknet'
+]
+
 # Init Argument Parser
 parser = ArgumentParser()
 parser.add_argument('--x-data', '-xd', type=str, required=True, help='x_data folder path')
@@ -27,9 +31,12 @@ parser.add_argument('--y-data-t', '-ydt', type=str, required=True, help='y_data 
 parser.add_argument('--backbone', type=str, required=True, help='Backbone for model', choices=AVAILABLE_MODELS)
 parser.add_argument('--output', '-o', type=str, help='Output path', default='OUTPUT')
 parser.add_argument('--epochs', '-e', type=int, help='Number of epochs', default=25)
+parser.add_argument('--architecture', '-a', type=str, help='Architecture to train. Default U-Net',
+                    choices=AVAILABLE_ARCHITECTURES, default=AVAILABLE_ARCHITECTURES[0])
 args = parser.parse_args()
 
 BACKBONE = args.backbone
+ARCHITECTURE = args.architecture
 X_DATA = args.x_data
 Y_DATA = args.y_data
 if not (Path(X_DATA).exists() and Path(Y_DATA).exists()):
@@ -55,24 +62,27 @@ val_generator = MyGenerator(X_DATA_T, Y_DATA_T, split=-0.2)
 
 
 # Create model
-model = sm.Unet(BACKBONE, input_shape=(None, None, 2), encoder_weights=None, classes=5, activation='softmax')
+if ARCHITECTURE == 'unet':
+    model = sm.Unet(BACKBONE, input_shape=(None, None, 2), encoder_weights=None, classes=5, activation='softmax')
+elif ARCHITECTURE == 'linknet':
+    model = sm.Linknet(BACKBONE, input_shape=(None, None, 2), encoder_weights=None, classes=5, activation='softmax')
 model.compile('adam', 'categorical_crossentropy', ['accuracy'])
 
 # Create callbacks
-callbacks = [keras.callbacks.ModelCheckpoint(str(OUTPUT / ('{epoch:02d}-{val_loss:.4f}val_loss-{val_acc:.4f}%-' + BACKBONE + '.h5')), monitor='val_loss', save_best_only=True),
+callbacks = [keras.callbacks.ModelCheckpoint(str(OUTPUT / ('{epoch:02d}-{val_loss:.4f}val_loss-{val_accuracy:.4f}%-' + ARCHITECTURE + '-' + BACKBONE + '.h5')), monitor='val_loss', save_best_only=True),
     keras.callbacks.EarlyStopping(patience=10, monitor='val_loss'),
     keras.callbacks.ReduceLROnPlateau(patience=3, monitor='val_loss')]
 
 # Train model
 history = model.fit(train_generator, epochs=EPOCHS, callbacks=callbacks, validation_data=test_generator)
 
-with open(str(OUTPUT/(BACKBONE + '.csv')), 'w') as f:
+with open(str(OUTPUT/(ARCHITECTURE + '-' + BACKBONE + '.csv')), 'w') as f:
     pd.DataFrame(history.history).to_csv(f)
 
 plt.figure(figsize=(10, 5))
 plt.subplot(1, 2, 1)
-plt.plot(history.history['acc'], 'g')
-plt.plot(history.history['val_acc'], 'r')
+plt.plot(history.history['accuracy'], 'g')
+plt.plot(history.history['val_accuracy'], 'r')
 plt.legend(['Train accuracy', 'Validation accuracy'])
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
@@ -85,7 +95,7 @@ plt.legend(['Train loss', 'Validation loss'])
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.title(BACKBONE + ' loss')
-plt.savefig(str(OUTPUT / (BACKBONE + '.png')))
+plt.savefig(str(OUTPUT / (ARCHITECTURE + '-' + BACKBONE + '.png')))
 
 
 # Calc F1 score
@@ -118,4 +128,4 @@ plt.figure(figsize=(10, 10))
 hm = heatmap(cm_copy, xticklabels=['no data', 'deforestation', 'forestation', 'no change', 'water'], yticklabels=['no data', 'deforestation', 'forestation', 'no change', 'water'])
 hm.set_xlabel('Predicted')
 hm.set_ylabel('Actual')
-plt.savefig(str(OUTPUT / (BACKBONE + '-confusion-matrix-no-middle.png')))
+plt.savefig(str(OUTPUT / (ARCHITECTURE + '-' + BACKBONE + '-confusion-matrix-no-middle.png')))
