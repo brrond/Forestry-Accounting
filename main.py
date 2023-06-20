@@ -25,6 +25,7 @@ import rasterio
 
 # Machine learning modules
 import tensorflow as tf
+from efficientnet.tfkeras import EfficientNetB4
 
 from scripts.imageprocessing import ImageProcessing
 
@@ -241,11 +242,11 @@ class MainGUIController:
             # '48.627347, 35.372376',
             # '48.199646, 35.314636',
             # '48.379442, 34.630997'
-            '48.238534, 37.697641',
-            '47.970177, 38.328160',
-            '47.875766, 37.801573',
-            '47.981000, 37.561375',
-            '48.044346, 37.623734'
+            #'48.238534, 37.697641',
+            #'47.970177, 38.328160',
+            #'47.875766, 37.801573',
+            #'47.981000, 37.561375',
+            #'48.044346, 37.623734'
         ]
         self.first_path = self.second_path = None  # directory paths
         self.loader1 = self.loader2 = None  # loaders

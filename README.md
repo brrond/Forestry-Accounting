@@ -20,9 +20,20 @@ There are totally 3 different encoders:
     <li><a href="https://arxiv.org/abs/1409.1556">Vgg16</a></li>
     <li><a href="https://arxiv.org/abs/1512.03385">ResNet18</a></li>
     <li><a href="https://arxiv.org/abs/1905.11946">EfficientNetB0</a></li>
+    *From this point on no new models will be added to assets. Only test results of this models will be added.
 </ul>
 
-## Results
+## Application
+
+Because it's awful idea to make a project that will work only from command line software GUI application was developed.
+
+<img src="doc/main-window.png" alt="" width="400">
+
+<img src="doc/ndvi-visualization.png" alt="" width="600">
+
+<img src="doc/ndvi-classes-visualization.png" alt="" width="600">
+
+## Model Tests Results
 
 As the result of the project user-friendly easy-to-use (and another nouns-to-adjectives) GUI application with Artificial Intelligence components was created. Six networks were created, trained and tested:
 
