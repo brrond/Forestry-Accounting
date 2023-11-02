@@ -133,3 +133,6 @@ dmypy.json
 
 # data folder with landsat 8 data
 data
+
+# All model files
+*.h5
