@@ -16,7 +16,7 @@ from datagenerator import MyGenerator
 AVAILABLE_MODELS = ['vgg16', 'vgg19', 
                     'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
                     'seresnet18', 
-                    'efficientnetb0', 'efficientnetb1', 'efficientnetb2']
+                    'efficientnetb0', 'efficientnetb1', 'efficientnetb2', 'efficientnetb6']
 
 AVAILABLE_ARCHITECTURES = [
     'unet', 'linknet'

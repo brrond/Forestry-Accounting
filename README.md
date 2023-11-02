@@ -1,8 +1,10 @@
 # Forestry-Accounting
 
-The project was created as final project in 2023 by Daniil Onishchenko.
+The project was developed as a graduation work of computer science degree and now has become playground for different AI projects.
 
-## Models and architectures
+## Deforestation-reforestation detection with NDVI Based CNN
+
+The actual part of the original project. The idea is to use two NDVIs (from two different timestamps) to compare vegetation change and visualize change map.
 
 ### Architectures
 
@@ -19,59 +21,70 @@ There are totally 3 different encoders:
 <ul>
     <li><a href="https://arxiv.org/abs/1409.1556">Vgg16</a></li>
     <li><a href="https://arxiv.org/abs/1512.03385">ResNet18</a></li>
-    <li><a href="https://arxiv.org/abs/1905.11946">EfficientNetB0</a></li>
-    *From this point on no new models will be added to assets. Only test results of this models will be added.
+    <li><a href="https://arxiv.org/abs/1905.11946">EfficientNetB0 & EfficientNetB6</a></li>
 </ul>
+
+### Model Tests Results
+
+<table>
+    <tr>
+        <td>Model performance</td>
+        <td>Metrics</td>
+        <td>Confusion</td>
+    </tr>
+    <tr><td colspan='3'>VGG16 U-Net</td></tr>
+    <tr>
+        <td><img src="doc/unet-vgg16.png" alt="" width="400"></td>
+        <td><img src="doc/unet-vgg16-f1.png" alt="" width="200"></td>
+        <td><img src="doc/unet-vgg16-confusion-matrix-no-middle.png" alt="" width="400"></td>
+    </tr>
+    <tr><td colspan='3'>VGG16 LinkNet</td></tr>
+    <tr>
+        <td><img src="doc/linknet-vgg16.png" alt="" width="400"></td>
+        <td><img src="doc/linknet-vgg16-f1.png" alt="" width="200"></td>
+        <td><img src="doc/linknet-vgg16-confusion-matrix-no-middle.png" alt="" width="400"></td>
+    </tr>
+    <tr><td colspan='3'>ResNet18 U-Net</td></tr>
+    <tr>
+        <td><img src="doc/unet-resnet18.png" alt="" width="400"></td>
+        <td><img src="doc/unet-resnet18-f1.png" alt="" width="200"></td>
+        <td><img src="doc/unet-resnet18-confusion-matrix-no-middle.png" alt="" width="400"></td>
+    </tr>
+    <tr><td colspan='3'>ResNet18 LinkNet</td></tr>
+    <tr>
+        <td><img src="doc/linknet-resnet18.png" alt="" width="400"></td>
+        <td><img src="doc/linknet-resnet18-f1.png" alt="" width="200"></td>
+        <td><img src="doc/linknet-resnet18-confusion-matrix-no-middle.png" alt="" width="400"></td>
+    </tr>
+    <tr><td colspan='3'>EfficientNetB0 U-Net</td></tr>
+    <tr>
+        <td><img src="doc/unet-efficientnetb0.png" alt="" width="400"></td>
+        <td><img src="doc/unet-efficientnetb0-f1.png" alt="" width="200"></td>
+        <td><img src="doc/unet-efficientnetb0-confusion-matrix-no-middle.png" alt="" width="400"></td>
+    </tr>
+    <tr><td colspan='3'>EfficientNetB0 LinkNet</td></tr>
+    <tr>
+        <td><img src="doc/linknet-efficientnetb0.png" alt="" width="400"></td>
+        <td><img src="doc/linknet-efficientnetb0-f1.png" alt="" width="200"></td>
+        <td><img src="doc/linknet-efficientnetb0-confusion-matrix-no-middle.png" alt="" width="400"></td>
+    </tr>
+    <tr><td colspan='3'>EfficientNetB6 U-Net</td></tr>
+    <tr>
+        <td><img src="doc/unet-efficientnetb6.png" alt="" width="400"></td>
+        <td><img src="doc/unet-efficientnetb6-f1.png" alt="" width="200"></td>
+        <td><img src="doc/unet-efficientnetb6-confusion-matrix-no-middle.png" alt="" width="400"></td>
+    </tr>
+</table>
 
 ## Application
 
-Because it's awful idea to make a project that will work only from command line software GUI application was developed.
+Because it's awful idea to make a project that will work only from command line GUI application was developed.
 
-<img src="doc/main-window.png" alt="" width="400">
+<img src="doc/main-window.png" alt="" width="300">
 
 <img src="doc/ndvi-visualization.png" alt="" width="600">
 
 <img src="doc/ndvi-classes-visualization.png" alt="" width="600">
-
-## Model Tests Results
-
-As the result of the project user-friendly easy-to-use (and another nouns-to-adjectives) GUI application with Artificial Intelligence components was created. Six networks were created, trained and tested:
-
-### VGG16 U-Net
-
-<img src="doc/unet-vgg16.png" alt="" width="1000">
-<img src="doc/unet-vgg16-f1.png" alt="" width="1000">
-<img src="doc/unet-vgg16-confusion-matrix-no-middle.png" alt="" width="1000">
-
-### VGG16 LinkNet
-
-<img src="doc/linknet-vgg16.png" alt="" width="1000">
-<img src="doc/linknet-vgg16-f1.png" alt="" width="1000">
-<img src="doc/linknet-vgg16-confusion-matrix-no-middle.png" alt="" width="1000">
-
-### ResNet18 U-Net
-
-<img src="doc/unet-resnet18.png" alt="" width="1000">
-<img src="doc/unet-resnet18-f1.png" alt="" width="1000">
-<img src="doc/unet-resnet18-confusion-matrix-no-middle.png" alt="" width="1000">
-
-### ResNet18 LinkNet
-
-<img src="doc/linknet-resnet18.png" alt="" width="1000">
-<img src="doc/linknet-resnet18-f1.png" alt="" width="1000">
-<img src="doc/linknet-resnet18-confusion-matrix-no-middle.png" alt="" width="1000">
-
-### EfficientNetB0 U-Net
-
-<img src="doc/unet-efficientnetb0.png" alt="" width="1000">
-<img src="doc/unet-efficientnetb0-f1.png" alt="" width="1000">
-<img src="doc/unet-efficientnetb0-confusion-matrix-no-middle.png" alt="" width="1000">
-
-### EfficientNetB0 LinkNet
-
-<img src="doc/linknet-efficientnetb0.png" alt="" width="1000">
-<img src="doc/linknet-efficientnetb0-f1.png" alt="" width="1000">
-<img src="doc/linknet-efficientnetb0-confusion-matrix-no-middle.png" alt="" width="1000">
 
 ## How to run scripts
 
