@@ -44,15 +44,17 @@ class Loader:
 
         # save directory path and get bands
         self.dir = dir_
-        self.bands = list(filter(lambda f: re.compile('B[0-9]*.TIF').search(f), os.listdir(self.dir)))
+        self.bands = list(
+            filter(lambda f: re.compile("B[0-9]*.TIF").search(f), os.listdir(self.dir))
+        )
 
         # get coordinate reference system
         a = rasterio.open(self.dir / self.bands[0])
         self.crs = a.crs
         del a
 
-    visualizations = ['rgb', 'rgb_s', 'ndvi', 'gndvi', 'ndvi_classes', 'grvi', 'ndwi']
-    indices = ['ndvi', 'gndvi', 'grvi', 'ndwi']
+    visualizations = ["rgb", "rgb_s", "ndvi", "gndvi", "ndvi_classes", "grvi", "ndwi"]
+    indices = ["ndvi", "gndvi", "grvi", "ndwi"]
 
     def load(self, band: int):
         """
@@ -68,9 +70,9 @@ class Loader:
     @staticmethod
     def _crop(src, coordinates):
         if coordinates is not None:
-            return msk.mask(src, coordinates, crop=True)[0][0].astype('float64')
+            return msk.mask(src, coordinates, crop=True)[0][0].astype("float64")
         else:
-            return src.read(1).astype('float64')
+            return src.read(1).astype("float64")
 
     def rgb(self, coordinates=None):
         """
@@ -93,7 +95,9 @@ class Loader:
         # merge with cv2
         # simply combines three channels into one array
         rgb = cv2.merge((r, g, b))
-        rgb = (rgb / rgb.max() * 255).astype('uint8')  # scale image range from [0., 1.] to [0., 255.] and cast to uint8
+        rgb = (rgb / rgb.max() * 255).astype(
+            "uint8"
+        )  # scale image range from [0., 1.] to [0., 255.] and cast to uint8
         return rgb
 
     def rgb_s(self, coordinates=None):
@@ -176,21 +180,35 @@ class Loader:
         # isn't the most efficient way to get cloud mask
         # if aerosol layer value (from 0 to 1) is higher then 40% then it's cloud
         # TODO: Insert link to prove the idea
-        b1 = np.where(b1 / (2 ** 16) > 0.4, 1, 0).astype('uint8')
+        b1 = np.where(b1 / (2**16) > 0.4, 1, 0).astype("uint8")
 
         ndvi = self.ndvi(coordinates)  # obtain ndvi first
 
         # assign classes
-        ndvi_classification = np.zeros(ndvi.shape + (3,)).astype('uint8')  # create placeholder
+        ndvi_classification = np.zeros(ndvi.shape + (3,)).astype(
+            "uint8"
+        )  # create placeholder
         ndvi_classification[(ndvi < 0.02) & (ndvi != 0)] = [0, 0, 255]  # water body
         ndvi_classification[b1 == 1] = [255, 255, 255]  # clouds
-        ndvi_classification[(ndvi >= 0.02) & (ndvi < 0.12)] = [128, 128, 128]  # shadow/buildings
-        ndvi_classification[(ndvi > 0.15) & (ndvi < 0.2)] = [128, 128, 0]  # bare soil/sand
-        ndvi_classification[(ndvi >= 0.2) & (ndvi < 0.4)] = [0, 255, 0]  # low vegetation
+        ndvi_classification[(ndvi >= 0.02) & (ndvi < 0.12)] = [
+            128,
+            128,
+            128,
+        ]  # shadow/buildings
+        ndvi_classification[(ndvi > 0.15) & (ndvi < 0.2)] = [
+            128,
+            128,
+            0,
+        ]  # bare soil/sand
+        ndvi_classification[(ndvi >= 0.2) & (ndvi < 0.4)] = [
+            0,
+            255,
+            0,
+        ]  # low vegetation
         ndvi_classification[(ndvi >= 0.4)] = [0, 128, 0]  # huge vegetation
 
         # cast to uint8 and return
-        return ndvi_classification.astype('uint8')
+        return ndvi_classification.astype("uint8")
 
     def grvi(self, coordinates=None):
         g = self.load(2)
@@ -201,7 +219,7 @@ class Loader:
 
         # calculate ndvi
         # may give zero division warning, so nan_to_num is used
-        grvi = np.nan_to_num(nir/g)
+        grvi = np.nan_to_num(nir / g)
 
         return grvi
 
@@ -217,7 +235,15 @@ class Loader:
         return ndwi
 
     def get_method(self, name):
-        methods = [self.rgb, self.rgb_s, self.ndvi, self.gndvi, self.ndvi_classes, self.grvi, self.ndwi]
+        methods = [
+            self.rgb,
+            self.rgb_s,
+            self.ndvi,
+            self.gndvi,
+            self.ndvi_classes,
+            self.grvi,
+            self.ndwi,
+        ]
         for method in methods:
             if name == method.__name__:
                 return method
@@ -225,7 +251,12 @@ class Loader:
 
 
 class LandsatData(dict):
-    def __init__(self, row, path, dt,):
+    def __init__(
+        self,
+        row,
+        path,
+        dt,
+    ):
         super().__init__()
 
 
@@ -262,7 +293,7 @@ class MainGUIController:
 
         coordinates = []
         for coord in self.coordinates:
-            split = coord.split(', ')
+            split = coord.split(", ")
             coordinates.append([float(split[0]), float(split[1])])
         return np.array(coordinates)
 
@@ -286,16 +317,24 @@ class MainGUIController:
         """
 
         if Path.exists(path) and Path.is_dir(path):
-            f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(path).glob('*')]))
+            f = list(
+                filter(
+                    None,
+                    [
+                        f if "_SR_stac.json" in str(f) else None
+                        for f in Path(path).glob("*")
+                    ],
+                )
+            )
             if f is None or len(f) == 0:
                 return
             f = f[0]
-            with open(f, 'r') as file:
+            with open(f, "r") as file:
                 json_decoder = json.load(file)
-                properties = json_decoder['properties']
-                path = properties['landsat:wrs_path']
-                row = properties['landsat:wrs_row']
-                dt = properties['datetime']
+                properties = json_decoder["properties"]
+                path = properties["landsat:wrs_path"]
+                row = properties["landsat:wrs_row"]
+                dt = properties["datetime"]
                 dt = dateutil.parser.isoparse(dt)
                 return path, row, dt
         raise FileNotFoundError()
@@ -325,21 +364,37 @@ class MainGUIController:
         if self.first_path is None:
             return {}
 
-        f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(self.first_path).glob('*')]))
+        f = list(
+            filter(
+                None,
+                [
+                    f if "_SR_stac.json" in str(f) else None
+                    for f in Path(self.first_path).glob("*")
+                ],
+            )
+        )
         if f is None or len(f) == 0:
             return
         f = f[0]
-        return json.load(open(f, 'r'))
+        return json.load(open(f, "r"))
 
     def get_second_json(self):
         if self.second_path is None:
             return {}
 
-        f = list(filter(None, [f if '_SR_stac.json' in str(f) else None for f in Path(self.second_path).glob('*')]))
+        f = list(
+            filter(
+                None,
+                [
+                    f if "_SR_stac.json" in str(f) else None
+                    for f in Path(self.second_path).glob("*")
+                ],
+            )
+        )
         if f is None or len(f) == 0:
             return
         f = f[0]
-        return json.load(open(f, 'r'))
+        return json.load(open(f, "r"))
 
     def clear_paths(self):
         """
@@ -354,7 +409,7 @@ class MainGUIController:
 
     def visualize_coordinates(self):
         if len(self.coordinates) == 0:
-            Application.error('No coordinates specified')
+            Application.error("No coordinates specified")
             return
 
         p = Polygon(self.get_coordinates_as_array())
@@ -365,18 +420,18 @@ class MainGUIController:
     def get_loader(self, loader_index: int) -> Loader:
         if loader_index == 1:
             if self.loader1 is None:
-                Application.error('Select path to first directory')
-                raise ValueError('No first loader found')
+                Application.error("Select path to first directory")
+                raise ValueError("No first loader found")
             return self.loader1
         else:
             if self.loader2 is None:
-                Application.error('Select path to second directory')
-                raise ValueError('No second loader found')
+                Application.error("Select path to second directory")
+                raise ValueError("No second loader found")
             return self.loader2
 
     def get_polygon(self, crs) -> Polygon:
         out_proj = CRS.from_wkt(crs.wkt)
-        in_proj = 'epsg:4326'
+        in_proj = "epsg:4326"
 
         new_coords = transform(in_proj, out_proj, self.get_coordinates_as_array())
         if len(new_coords) == 0:
@@ -386,14 +441,16 @@ class MainGUIController:
 
     @staticmethod
     def plot_img_in_another_process(img, title=None, legend_handles=None, cmap=None):
-        multiprocessing.Process(target=plot_img, args=(img, title, legend_handles, cmap)).start()
+        multiprocessing.Process(
+            target=plot_img, args=(img, title, legend_handles, cmap)
+        ).start()
 
     def get_img(self, method, ps, title, legend_handles=None, cmap=None):
         try:
             img = method(ps)
             self.plot_img_in_another_process(img, title, legend_handles, cmap)
         except:
-            Application.error('Coordinates don\'t specified correctly')
+            Application.error("Coordinates don't specified correctly")
 
     def __call__(self, loader: int, visualization: str):
         """
@@ -419,23 +476,39 @@ class MainGUIController:
 
         visualization = visualization.strip().lower()
         if visualization not in AVAILABLE_VISUALIZATIONS:
-            raise ValueError('Visualization must be one of ' + str(AVAILABLE_VISUALIZATIONS))
+            raise ValueError(
+                "Visualization must be one of " + str(AVAILABLE_VISUALIZATIONS)
+            )
 
         if loader_number >= 3 or loader_number <= 0:
-            raise ValueError('Loader number must be 1 or 2')
+            raise ValueError("Loader number must be 1 or 2")
         loader = self.get_loader(loader_number)
 
         p = self.get_polygon(loader.crs)
 
-        colors = ['k', 'b', 'w', 'tab:gray', 'y', 'tab:green', 'g']
-        labels = ['No data', 'Water', 'Clouds', 'Shadow/not living objects', 'Soil/sand', 'Low vegetation',
-                  'Huge vegetation']  # define labels
-        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
+        colors = ["k", "b", "w", "tab:gray", "y", "tab:green", "g"]
+        labels = [
+            "No data",
+            "Water",
+            "Clouds",
+            "Shadow/not living objects",
+            "Soil/sand",
+            "Low vegetation",
+            "Huge vegetation",
+        ]  # define labels
+        legend = [
+            ptchs.Patch(color=color, label=label)
+            for label, color in zip(labels, colors)
+        ]  # create legend
 
         method = loader.get_method(visualization)
-        self.get_img(method, [p] if p is not None else None, visualization.upper() + ' ' + str(loader_number),
-                     legend_handles=legend if 'classes' in visualization else None,
-                     cmap='RdYlGn' if visualization in INDICES else None)
+        self.get_img(
+            method,
+            [p] if p is not None else None,
+            visualization.upper() + " " + str(loader_number),
+            legend_handles=legend if "classes" in visualization else None,
+            cmap="RdYlGn" if visualization in INDICES else None,
+        )
 
     """
     deforestation method is called with specific deforestation model passed.
@@ -452,7 +525,9 @@ class MainGUIController:
 
     def deforestation(self, model_file):
         self.percentage = 0
-        foo_thread = threading.Thread(target=lambda: self.deforestation_(model_file))  # create Thread
+        foo_thread = threading.Thread(
+            target=lambda: self.deforestation_(model_file)
+        )  # create Thread
         foo_thread.daemon = True
         Application.start_progressbar()  # mainloop starts progressbar and always active to user commands
         foo_thread.start()  # starts TF process
@@ -470,22 +545,39 @@ class MainGUIController:
         x = np.concatenate((ndvi1, ndvi2), -1)
 
         # load model
-        model = tf.keras.models.load_model('assets/models/de_forestation/' + str(model_file))
+        model = tf.keras.models.load_model(
+            "assets/models/de_forestation/" + str(model_file)
+        )
         original_size = x.shape[:2]
         print(original_size)
         FIRST_TIME_POINT = time.time()
-        x = ImageProcessing.add_blank_to_npt(x)  # to correctly process input image must be in shapes of power of two
+        x = ImageProcessing.add_blank_to_npt(
+            x
+        )  # to correctly process input image must be in shapes of power of two
         resized_size = x.shape[:2]
 
         # define legend options
-        colors = ['k', 'r', 'g', 'y', 'b']  # define matplotlib colors
-        labels = ['No data', 'Deforestation', 'Forestation', 'No change', 'Water body']  # define labels
-        legend = [ptchs.Patch(color=color, label=label) for label, color in zip(labels, colors)]  # create legend
+        colors = ["k", "r", "g", "y", "b"]  # define matplotlib colors
+        labels = [
+            "No data",
+            "Deforestation",
+            "Forestation",
+            "No change",
+            "Water body",
+        ]  # define labels
+        legend = [
+            ptchs.Patch(color=color, label=label)
+            for label, color in zip(labels, colors)
+        ]  # create legend
 
-        if x.shape[0] <= 128 and x.shape[1] <= 128:  # if images is small single run can be performed
+        if (
+            x.shape[0] <= 128 and x.shape[1] <= 128
+        ):  # if images is small single run can be performed
             prediction = model.predict(x.reshape((1,) + x.shape))
-            self.plot_img_in_another_process(prediction[0], 'De-forestation', legend)
-            self.percentage = 1  # although no progressbar is needed, it must be destroyed
+            self.plot_img_in_another_process(prediction[0], "De-forestation", legend)
+            self.percentage = (
+                1  # although no progressbar is needed, it must be destroyed
+            )
         else:
             x = ImageProcessing.split_img(x, 64)  # split images to mini batches
             split_shape = x.shape[:-1]
@@ -493,7 +585,9 @@ class MainGUIController:
             y = np.zeros(x.shape[:-1] + (5,))  # create output placeholder
             N = x.shape[0]  # number of batches
             for i in range(0, N, 4):  # actual batch size is 4
-                y[i:i+4] = model.predict(x[i:i+4])  # process and save to output placeholder
+                y[i : i + 4] = model.predict(
+                    x[i : i + 4]
+                )  # process and save to output placeholder
                 self.percentage = i / N  # calculate percentage (for progressbar)
             self.percentage = 1  # after all is done progressbar must be destroyed
 
@@ -502,14 +596,23 @@ class MainGUIController:
             y = np.concatenate(np.concatenate(y, 1), 1)  # have no idea, why it works
             assert y.shape[:2] == resized_size  # just in case something went wrong
 
-            y = y.argmax(-1)[:original_size[0], :original_size[1]].astype('uint8')  # obtain necessary part only
-            img = np.zeros((y.shape[0], y.shape[1], 3), dtype='uint8')  # create placeholder of image
-            colors_in_rgb = [[255, 0, 0], [0, 255, 0], [255, 255, 0], [0, 0, 255]]  # define actual colors
-            colors_in_rgb = np.array(colors_in_rgb).astype('uint8')
+            y = y.argmax(-1)[: original_size[0], : original_size[1]].astype(
+                "uint8"
+            )  # obtain necessary part only
+            img = np.zeros(
+                (y.shape[0], y.shape[1], 3), dtype="uint8"
+            )  # create placeholder of image
+            colors_in_rgb = [
+                [255, 0, 0],
+                [0, 255, 0],
+                [255, 255, 0],
+                [0, 0, 255],
+            ]  # define actual colors
+            colors_in_rgb = np.array(colors_in_rgb).astype("uint8")
             for i in range(1, 5):
                 img[y == i] = colors_in_rgb[i - 1]
-            self.plot_img_in_another_process(img, 'De-forestation', legend)
-        print('Elapsed time', time.time() - FIRST_TIME_POINT)
+            self.plot_img_in_another_process(img, "De-forestation", legend)
+        print("Elapsed time", time.time() - FIRST_TIME_POINT)
 
 
 def plot_img(img, title=None, legend_handles=None, cmap=None):
@@ -557,10 +660,10 @@ def transform(in_proj, out_proj, coordinates):
     new_coords = []
     transformer = Transformer.from_crs(in_proj, out_proj)
     for coord in coordinates:
-        #new_coords.append(transformer.transform(coord[1], coord[0]))
+        # new_coords.append(transformer.transform(coord[1], coord[0]))
         new_coords.append(transformer.transform(coord[0], coord[1]))
     return new_coords
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     MainGUIController.main()
