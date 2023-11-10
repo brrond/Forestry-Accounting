@@ -1,5 +1,4 @@
 from tensorflow import keras
-from random import randint
 import numpy as np
 import tifffile
 import os
@@ -9,7 +8,7 @@ import os
 class MyGenerator(keras.utils.Sequence):
     """Helper to iterate over the data (as Numpy arrays)."""
 
-    def __init__(self, x_data='x_data/', y_data='y_data/', split=1.):
+    def __init__(self, x_data="x_data/", y_data="y_data/", split=1.0):
         """
         :param x_data: path to x_data folder.
         :param y_data: path to y_data folder.
@@ -27,12 +26,12 @@ class MyGenerator(keras.utils.Sequence):
         np.random.shuffle(self.images)
 
         # split > 0 => train split (0.8)
-        # split < 0 => validation split (-0.2 means 20% of the data only) 
+        # split < 0 => validation split (-0.2 means 20% of the data only)
         np.random.seed(42)
-        if split > 0.:
-            self.images = self.images[:int(split * len(self.images))]
+        if split > 0.0:
+            self.images = self.images[: int(split * len(self.images))]
         else:
-            self.images = self.images[int(split * len(self.images)):]
+            self.images = self.images[int(split * len(self.images)) :]
 
     def __len__(self):
         return len(self.images) // self.batch_size[0]
@@ -41,11 +40,11 @@ class MyGenerator(keras.utils.Sequence):
         """Returns tuple (input, target) correspond to batch #idx."""
 
         # get paths
-        images = self.images[idx*self.batch_size[0]:(idx+1)*self.batch_size[0]]
-        
+        images = self.images[idx * self.batch_size[0] : (idx + 1) * self.batch_size[0]]
+
         # create arrays
-        x = np.zeros(self.batch_size + self.img_size + (2,), dtype='float32')
-        y = np.zeros(self.batch_size + self.img_size + (5,), dtype='float32')
+        x = np.zeros(self.batch_size + self.img_size + (2,), dtype="float32")
+        y = np.zeros(self.batch_size + self.img_size + (5,), dtype="float32")
 
         # read data
         for i in range(self.batch_size[0]):

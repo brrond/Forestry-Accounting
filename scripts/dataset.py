@@ -5,7 +5,6 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
-from matplotlib import pyplot as plt
 from imageprocessing import ImageProcessing
 
 
@@ -35,9 +34,9 @@ if not Path.exists(OUTPUT):
 
 
 # Read and process data
-ndvi1 = tifffile.imread(DATA / 'ndvi1.TIF')
-ndvi2 = tifffile.imread(DATA / 'ndvi2.TIF')
-classes = tifffile.imread(DATA / 'classes.TIF')
+ndvi1 = tifffile.imread(DATA / "ndvi1.TIF")
+ndvi2 = tifffile.imread(DATA / "ndvi2.TIF")
+classes = tifffile.imread(DATA / "classes.TIF")
 
 
 # Reshape
@@ -50,17 +49,18 @@ classes.shape += (1,)
 
 
 # Split images
-ndvi1 = ImageProcessing.split_img(ndvi1, 64).astype('float32')
-ndvi2 = ImageProcessing.split_img(ndvi2, 64).astype('float32')
-classes = ImageProcessing.split_img(classes, 64).astype('uint8')
+ndvi1 = ImageProcessing.split_img(ndvi1, 64).astype("float32")
+ndvi2 = ImageProcessing.split_img(ndvi2, 64).astype("float32")
+classes = ImageProcessing.split_img(classes, 64).astype("uint8")
 ndvi1 = ndvi1.reshape((-1, 64, 64, 1))
 ndvi2 = ndvi2.reshape((-1, 64, 64, 1))
 classes = classes.reshape((-1, 64, 64, 1))
 
-os.mkdir(OUTPUT / 'x_data/')
-os.mkdir(OUTPUT / 'y_data/')
+os.mkdir(OUTPUT / "x_data/")
+os.mkdir(OUTPUT / "y_data/")
 
 for i in tqdm(range(ndvi1.shape[0])):
-    tifffile.imsave(OUTPUT / 'x_data/' / (str(i) + '.TIF'), np.concatenate((ndvi1[i], ndvi2[i]), -1))
-    tifffile.imsave(OUTPUT / 'y_data/' / (str(i) + '.TIF'), classes[i])
-
+    tifffile.imsave(
+        OUTPUT / "x_data/" / (str(i) + ".TIF"), np.concatenate((ndvi1[i], ndvi2[i]), -1)
+    )
+    tifffile.imsave(OUTPUT / "y_data/" / (str(i) + ".TIF"), classes[i])
